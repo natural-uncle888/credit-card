@@ -1,6 +1,6 @@
 # 繳費管理 Payment Reminder 使用說明
 
-# 版本：分頁版／霧面藍灰介面
+# 版本：v27／IndexedDB + Google Drive 雲端備份
 
 # 
 
@@ -16,15 +16,15 @@
 
 # 
 
-# 本 App 支援 PWA，可加入手機或電腦主畫面使用；資料主要儲存在目前瀏覽器的 localStorage，也就是「本機瀏覽器資料」。
+# 本 App 支援 PWA，可加入手機或電腦主畫面使用；資料主要儲存在目前瀏覽器的 IndexedDB，也就是「本機瀏覽器資料庫」。舊版 localStorage 資料會在第一次開啟時自動搬移到 IndexedDB。
 
 # 
 
 # 重要提醒：
 
-# 1\. 資料不會自動同步到雲端。
+# 1\. 資料主要存在目前瀏覽器的 IndexedDB；你可以手動匯出 JSON，也可以手動備份到 Google Drive。
 
-# 2\. 換手機、清除瀏覽器資料、重新安裝 App 前，請先匯出備份。
+# 2\. Google Drive 雲端備份需要先設定 OAuth Client ID，並在 Google Cloud 啟用 Google Drive API。
 
 # 3\. 帳號密碼備忘區只適合記錄繳費相關帳號或提示，不建議存放非常重要的正式密碼。
 
@@ -66,7 +66,7 @@
 
 # 4\. 設定
 
-# &#x20;  用來開啟通知、測試通知、加入主畫面、匯出資料與匯入資料。
+# &#x20;  用來開啟通知、測試通知、加入主畫面、Google 日曆、Google Drive 雲端備份、本機匯出與匯入資料。
 
 # 
 
@@ -562,7 +562,7 @@
 
 # 
 
-# 本 App 的帳號密碼備忘資料儲存在瀏覽器 localStorage。
+# 本 App 的帳號密碼備忘資料會以 Web Crypto API 加密後儲存在瀏覽器 IndexedDB。
 
 # 
 
@@ -1026,7 +1026,7 @@
 
 # 
 
-# 本 App 使用瀏覽器 localStorage 保存資料。
+# 本 App 使用瀏覽器 IndexedDB 保存主要資料。若從舊版升級，localStorage 內的舊資料會自動搬移到 IndexedDB。
 
 # 
 
@@ -1192,8 +1192,8 @@
 ## 2026-06 帳號資料加密更新
 
 - 「帳號」分頁新增主密碼解鎖區塊。
-- 帳號資料改用 Web Crypto API：PBKDF2 + AES-GCM 加密後存入 `localStorage` 的 `encryptedAccounts`。
-- 主密碼不會寫在 GitHub，也不會存在 `localStorage`；重新整理或按「重新鎖定」後需再次輸入。
+- 帳號資料使用 Web Crypto API：PBKDF2 + AES-GCM 加密後存入 IndexedDB 的 `encryptedAccounts`。
+- 主密碼不會寫在 GitHub，也不會存在 IndexedDB；重新整理或按「重新鎖定」後需再次輸入。
 - 舊版 `accounts` 明文資料會在第一次輸入主密碼時轉成加密資料。完成加密後，後續備份只會匯出 `encryptedAccounts`。
 - 請務必記住主密碼；忘記後無法解密還原帳號資料。
 
@@ -1251,3 +1251,34 @@ Google Cloud 設定重點：
 - 帳號主密碼輸入錯誤會計次，連續錯誤 5 次後暫時鎖定 1 小時。
 - 鎖定期間可選擇「忘記主密碼 / 重設帳號資料」，會永久刪除帳號分頁內的帳號與密碼備忘，帳單與繳費紀錄不受影響。
 - 帳號資料列表新增多選框、全選目前列表，以及刪除已選功能。
+
+
+## v26 更新：localStorage 改 IndexedDB
+
+- 主要資料儲存從 `localStorage` 改為 IndexedDB，較適合大量帳單、繳費紀錄與未來附件功能。
+- 第一次開啟新版時，會自動讀取舊版 `credit-card-reminder-v5` 與更舊版本資料並搬移到 IndexedDB。
+- 通知紀錄 `payment-manager-notified-v1` 也改為 IndexedDB 保存。
+- `localStorage` 只保留作為舊資料搬移來源，不再作為主要儲存位置。
+
+# ============================================================
+
+# Google Drive 雲端備份（v27 新增）
+
+# ============================================================
+
+#
+
+# 1. 到「設定」→「Google 服務」貼上你的 OAuth Client ID。
+
+# 2. Google Cloud 需使用 Web application 類型 OAuth Client，並把此網頁網址加入 Authorized JavaScript origins。
+
+# 3. 請確認已啟用 Google Drive API；若也要上傳帳單提醒，請同時啟用 Google Calendar API。
+
+# 4. 按「備份到 Drive」會把目前 App 資料存到 Google Drive 的 App 專用資料夾 appDataFolder。
+
+# 5. 按「從 Drive 還原」會讀取同一 Google 帳號中的雲端備份，確認後覆蓋目前瀏覽器資料。
+
+# 6. appDataFolder 是 App 專用隱藏資料夾，備份檔通常不會出現在一般 Google Drive 檔案列表中。
+
+# 7. 還原前建議先用「本機資料備份」匯出一份 JSON，避免誤覆蓋。
+

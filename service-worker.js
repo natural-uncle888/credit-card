@@ -1,4 +1,4 @@
-const CACHE_NAME = 'payment-manager-v25-account-security-bulk';
+const CACHE_NAME = 'payment-manager-v27-google-drive-backup';
 const ASSETS = [
   "./",
   "./index.html",

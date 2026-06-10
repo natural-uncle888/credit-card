@@ -416,8 +416,8 @@
 
 
             <div class="setting-card google-calendar-card">
-              <h3>Google 日曆</h3>
-              <p>貼上你的 Google OAuth Client ID 後，帳單清單內的按鈕會把繳費提醒直接新增到你的主要 Google 日曆。</p>
+              <h3>Google 服務</h3>
+              <p>貼上你的 Google OAuth Client ID 後，可使用 Google 日曆提醒與 Google Drive 雲端備份。請確認 Google Calendar API 與 Google Drive API 都已啟用。</p>
               <label>
                 OAuth Client ID
                 <input id="googleClientId" type="text" inputmode="text" autocomplete="off" placeholder="例如：xxxxx.apps.googleusercontent.com" />
@@ -429,9 +429,22 @@
               </div>
             </div>
 
+
+
+            <div class="setting-card google-drive-card">
+              <h3>Google Drive 雲端備份</h3>
+              <p>備份會存到 Google Drive 的 App 專用資料夾，不會散落在一般雲端硬碟檔案列表。換裝置時可用同一組 Google 帳號還原。</p>
+              <p id="googleDriveStatus" class="setting-status">尚未建立 Google Drive 雲端備份。</p>
+              <div class="settings-actions">
+                <button id="backupToGoogleDriveBtn" class="small-btn" type="button">備份到 Drive</button>
+                <button id="restoreFromGoogleDriveBtn" class="small-btn" type="button">從 Drive 還原</button>
+              </div>
+              <p class="helper-text">還原會用雲端備份覆蓋目前瀏覽器資料；建議還原前先匯出一份本機 JSON。</p>
+            </div>
+
             <div class="setting-card">
-              <h3>資料備份</h3>
-              <p>資料存在目前裝置瀏覽器，換手機或清除資料前，請先匯出 JSON 備份檔。</p>
+              <h3>本機資料備份</h3>
+              <p>資料存在目前裝置瀏覽器，換手機或清除資料前，可先匯出 JSON 備份檔；也可以使用 Google Drive 雲端備份。</p>
               <div class="settings-actions">
                 <button id="exportBtn" class="small-btn" type="button">匯出資料</button>
                 <button id="importBtn" class="small-btn" type="button">匯入資料</button>
@@ -453,6 +466,6 @@
   </div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="app.js?v=24-account-scrollfix"></script>
+  <script src="app.js?v=27-google-drive-backup"></script>
 </body>
 </html>

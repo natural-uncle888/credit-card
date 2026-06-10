@@ -29,6 +29,9 @@ const googleClientIdInput = document.querySelector("#googleClientId");
 const saveGoogleClientIdBtn = document.querySelector("#saveGoogleClientIdBtn");
 const googleCalendarStatus = document.querySelector("#googleCalendarStatus");
 const disconnectGoogleCalendarBtn = document.querySelector("#disconnectGoogleCalendarBtn");
+const googleDriveStatus = document.querySelector("#googleDriveStatus");
+const backupToGoogleDriveBtn = document.querySelector("#backupToGoogleDriveBtn");
+const restoreFromGoogleDriveBtn = document.querySelector("#restoreFromGoogleDriveBtn");
 const accountWorkspace = document.querySelector("#accountWorkspace");
 const accountFormDetails = document.querySelector("#accountFormDetails");
 const accountImportDetails = document.querySelector("#accountImportDetails");
@@ -62,13 +65,13 @@ const tabPanels = document.querySelectorAll("[data-tab-panel]");
 const billSubtabButtons = document.querySelectorAll("[data-bill-view]");
 const billSubtabPanels = document.querySelectorAll("[data-bill-view-panel]");
 
-let loadedState = loadState();
-let cards = loadedState.cards;
-let history = loadedState.history;
-let encryptedAccounts = loadedState.encryptedAccounts || null;
-let settings = loadedState.settings;
+let loadedState = { cards: [], history: [], encryptedAccounts: null, legacyAccounts: [], settings: defaultSettings() };
+let cards = [];
+let history = [];
+let encryptedAccounts = null;
+let settings = defaultSettings();
 let accounts = [];
-let legacyAccounts = loadedState.legacyAccounts || [];
+let legacyAccounts = [];
 let accountVaultUnlocked = false;
 let accountVaultPasswordCache = "";
 let deferredPrompt = null;
@@ -80,7 +83,8 @@ let selectedAccountIds = new Set();
 
 const ACCOUNT_MAX_UNLOCK_ATTEMPTS = 5;
 const ACCOUNT_LOCKOUT_MS = 60 * 60 * 1000;
-const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+const GOOGLE_SCOPES = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/drive.appdata";
+const GOOGLE_DRIVE_BACKUP_FILE_NAME = "payment-manager-backup.json";
 
 const fields = {
   cardId: document.querySelector("#cardId"),
@@ -309,18 +313,90 @@ function showAppToast(message, type = "success") {
   showAppToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2200);
 }
 
-function loadState() {
+const DB_NAME = "payment-manager-db";
+const DB_VERSION = 1;
+const DB_STORE = "keyval";
+const MAIN_STATE_ID = STORAGE_KEY;
+const NOTIFIED_ID = "payment-manager-notified-v1";
+let dbPromise = null;
+
+function supportsIndexedDB() {
+  return "indexedDB" in window;
+}
+
+function openAppDatabase() {
+  if (!supportsIndexedDB()) {
+    return Promise.reject(new Error("此瀏覽器不支援 IndexedDB。"));
+  }
+  if (dbPromise) return dbPromise;
+
+  dbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = event => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(DB_STORE)) {
+        db.createObjectStore(DB_STORE, { keyPath: "id" });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("IndexedDB 開啟失敗。"));
+    request.onblocked = () => reject(new Error("IndexedDB 升級被其他分頁阻擋，請關閉同網站其他分頁後重試。"));
+  });
+
+  return dbPromise;
+}
+
+async function idbGet(id) {
+  const db = await openAppDatabase();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, "readonly");
+    const store = tx.objectStore(DB_STORE);
+    const request = store.get(id);
+    request.onsuccess = () => resolve(request.result?.value ?? null);
+    request.onerror = () => reject(request.error || new Error("IndexedDB 讀取失敗。"));
+  });
+}
+
+async function idbSet(id, value) {
+  const db = await openAppDatabase();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, "readwrite");
+    const store = tx.objectStore(DB_STORE);
+    store.put({ id, value, updatedAt: new Date().toISOString() });
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error || new Error("IndexedDB 儲存失敗。"));
+    tx.onabort = () => reject(tx.error || new Error("IndexedDB 儲存中止。"));
+  });
+}
+
+async function migrateLocalStorageToIndexedDB() {
   const current = readJson(STORAGE_KEY);
-  if (current) return normalizeState(current);
+  if (current) {
+    const migrated = normalizeState(current);
+    await idbSet(MAIN_STATE_ID, migrated);
+    return migrated;
+  }
 
   for (const key of LEGACY_KEYS) {
     const legacy = readJson(key);
     if (legacy) {
       const migrated = normalizeState(Array.isArray(legacy) ? { cards: legacy, history: [] } : legacy);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      await idbSet(MAIN_STATE_ID, migrated);
       return migrated;
     }
   }
+
+  return null;
+}
+
+async function loadState() {
+  const current = await idbGet(MAIN_STATE_ID);
+  if (current) return normalizeState(current);
+
+  const migrated = await migrateLocalStorageToIndexedDB();
+  if (migrated) return migrated;
 
   return { cards: [], history: [], encryptedAccounts: null, legacyAccounts: [], settings: defaultSettings() };
 }
@@ -337,6 +413,8 @@ function readJson(key) {
 function defaultSettings() {
   return {
     lastExportedAt: "",
+    lastGoogleDriveBackupAt: "",
+    googleDriveBackupFileId: "",
     googleClientId: "",
     accountVaultSecurity: { failedAttempts: 0, lockedUntil: 0 }
   };
@@ -351,8 +429,17 @@ function saveState() {
     payload.accounts = legacyAccounts;
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  saveState.lastSavePromise = idbSet(MAIN_STATE_ID, payload).catch(error => {
+    console.error("IndexedDB 儲存失敗：", error);
+    if (typeof showAppToast === "function") {
+      showAppToast("資料儲存失敗，請確認瀏覽器儲存空間或權限。", "danger");
+    }
+  });
+
+  return saveState.lastSavePromise;
 }
+
+saveState.lastSavePromise = Promise.resolve();
 
 function normalizeState(data) {
   const importedCards = Array.isArray(data) ? data : data?.cards;
@@ -913,10 +1000,10 @@ function switchTab(tabName, options = {}) {
   }
 }
 
-function exportData() {
+function buildBackupPayload() {
   const backup = {
     app: "payment-manager",
-    version: 6,
+    version: 7,
     exportedAt: new Date().toISOString(),
     cards,
     history,
@@ -927,6 +1014,12 @@ function exportData() {
   if (!encryptedAccounts && legacyAccounts.length > 0) {
     backup.accounts = legacyAccounts;
   }
+
+  return backup;
+}
+
+function exportData() {
+  const backup = buildBackupPayload();
 
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -941,6 +1034,7 @@ function exportData() {
   saveState();
   renderBackupReminder();
   renderGoogleCalendarSettings();
+  renderGoogleDriveSettings();
 }
 
 function isValidDateString(value) {
@@ -985,6 +1079,24 @@ function buildImportPreviewMessage(imported) {
   ].join("\n");
 }
 
+async function applyImportedState(imported) {
+  cards = imported.cards;
+  history = imported.history;
+  encryptedAccounts = imported.encryptedAccounts || null;
+  legacyAccounts = imported.legacyAccounts || [];
+  settings = imported.settings || defaultSettings();
+  accounts = [];
+  accountVaultUnlocked = false;
+  accountVaultPasswordCache = "";
+  selectedAccountIds.clear();
+  resetForm();
+  resetAccountForm();
+  hideChangeMasterPasswordForm();
+  await saveState();
+  render();
+  updateAccountVaultUI();
+}
+
 async function importData(file) {
   try {
     const text = await file.text();
@@ -1008,15 +1120,7 @@ async function importData(file) {
     });
     if (choice !== "overwrite") return;
 
-    cards = imported.cards;
-    history = imported.history;
-    encryptedAccounts = imported.encryptedAccounts || null;
-    legacyAccounts = imported.legacyAccounts || [];
-    settings = imported.settings || defaultSettings();
-    lockAccountVault();
-    saveState();
-    resetForm();
-    render();
+    await applyImportedState(imported);
     await showAppAlert("匯入完成，資料已還原。", { type: "success", title: "匯入完成" });
   } catch {
     await showAppAlert("匯入失敗：請確認選到的是 JSON 備份檔。", { type: "danger", title: "匯入失敗" });
@@ -1784,6 +1888,7 @@ function render() {
   renderAccounts();
   renderBackupReminder();
   renderGoogleCalendarSettings();
+  renderGoogleDriveSettings();
 }
 
 function escapeHtml(value) {
@@ -1817,6 +1922,21 @@ function renderGoogleCalendarSettings() {
   updateGoogleCalendarStatus();
 }
 
+function renderGoogleDriveSettings(message = "") {
+  if (!googleDriveStatus) return;
+  if (message) {
+    googleDriveStatus.textContent = message;
+    return;
+  }
+
+  const backupText = settings.lastGoogleDriveBackupAt
+    ? `最近雲端備份：${formatDateTime(settings.lastGoogleDriveBackupAt)}`
+    : "尚未建立 Google Drive 雲端備份。";
+  googleDriveStatus.textContent = settings.googleClientId
+    ? `${backupText} 備份檔會存到 Google Drive App 專用資料夾。`
+    : "尚未設定 OAuth Client ID。請先在上方 Google 服務設定貼上 Client ID。";
+}
+
 function updateGoogleCalendarStatus(message = "") {
   if (!googleCalendarStatus) return;
   if (message) {
@@ -1824,7 +1944,7 @@ function updateGoogleCalendarStatus(message = "") {
     return;
   }
   googleCalendarStatus.textContent = settings.googleClientId
-    ? "已設定 OAuth Client ID。帳單清單可直接上傳到 Google 日曆。"
+    ? "已設定 OAuth Client ID。帳單清單可上傳 Google 日曆，也可使用 Google Drive 雲端備份。"
     : "尚未設定 OAuth Client ID。請先貼上 Google Cloud 的 Web OAuth Client ID。";
 }
 
@@ -1835,7 +1955,8 @@ function saveGoogleCalendarClientId() {
   googleAccessToken = "";
   saveState();
   updateGoogleCalendarStatus(clientId ? "OAuth Client ID 已儲存。" : "已清除 OAuth Client ID。");
-  showAppToast(clientId ? "Google 日曆設定已儲存。" : "Google 日曆設定已清除。", "success");
+  renderGoogleDriveSettings(clientId ? "OAuth Client ID 已儲存，可使用 Google Drive 雲端備份。" : "已清除 OAuth Client ID。");
+  showAppToast(clientId ? "Google 服務設定已儲存。" : "Google 服務設定已清除。", "success");
 }
 
 function disconnectGoogleCalendar() {
@@ -1845,6 +1966,7 @@ function disconnectGoogleCalendar() {
   googleAccessToken = "";
   googleTokenClient = null;
   updateGoogleCalendarStatus("已中斷本次 Google 授權；OAuth Client ID 仍保留在設定中。");
+  renderGoogleDriveSettings("已中斷本次 Google 授權；OAuth Client ID 仍保留在設定中。");
   showAppToast("已中斷本次 Google 授權。", "success");
 }
 
@@ -1887,7 +2009,7 @@ function getGoogleAccessToken() {
 
     googleTokenClient = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: GOOGLE_CALENDAR_SCOPE,
+      scope: GOOGLE_SCOPES,
       callback: response => {
         if (response?.error) {
           reject(new Error(response.error));
@@ -1904,6 +2026,171 @@ function getGoogleAccessToken() {
 
     googleTokenClient.requestAccessToken({ prompt: googleAccessToken ? "" : "consent" });
   });
+}
+
+
+function getGoogleDriveBackupMetadata() {
+  return {
+    name: GOOGLE_DRIVE_BACKUP_FILE_NAME,
+    mimeType: "application/json",
+    parents: ["appDataFolder"],
+    appProperties: {
+      app: "payment-manager",
+      type: "backup"
+    }
+  };
+}
+
+function createMultipartBody(metadata, jsonText) {
+  const boundary = `payment_manager_${crypto.randomUUID().replace(/-/g, "")}`;
+  const body = [
+    `--${boundary}`,
+    "Content-Type: application/json; charset=UTF-8",
+    "",
+    JSON.stringify(metadata),
+    `--${boundary}`,
+    "Content-Type: application/json; charset=UTF-8",
+    "",
+    jsonText,
+    `--${boundary}--`
+  ].join("\r\n");
+  return { boundary, body };
+}
+
+async function requestGoogleDriveApi(token, url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {})
+    }
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const result = contentType.includes("application/json") ? await response.json() : await response.text();
+  if (!response.ok) {
+    const message = result?.error?.message || result || "Google Drive 操作失敗";
+    throw new Error(message);
+  }
+  return result;
+}
+
+async function findGoogleDriveBackupFile(token) {
+  const query = [
+    `name='${GOOGLE_DRIVE_BACKUP_FILE_NAME.replace(/'/g, "\\'")}'`,
+    `'appDataFolder' in parents`,
+    "trashed=false"
+  ].join(" and ");
+  const params = new URLSearchParams({
+    q: query,
+    spaces: "appDataFolder",
+    fields: "files(id,name,modifiedTime,size)",
+    orderBy: "modifiedTime desc",
+    pageSize: "1"
+  });
+  const result = await requestGoogleDriveApi(token, `https://www.googleapis.com/drive/v3/files?${params.toString()}`);
+  return Array.isArray(result.files) && result.files.length > 0 ? result.files[0] : null;
+}
+
+async function backupToGoogleDrive() {
+  if (!settings.googleClientId) {
+    await showAppAlert(
+      "請先貼上 Google OAuth Client ID，再使用 Google Drive 雲端備份。\n\nGoogle Cloud 的 OAuth 類型要選 Web application，並把此網頁網址加入 Authorized JavaScript origins。也請確認 Google Drive API 已啟用。",
+      { type: "warning", title: "尚未設定 Google 服務" }
+    );
+    switchTab("settings");
+    googleClientIdInput?.focus();
+    return;
+  }
+
+  try {
+    await saveState.lastSavePromise;
+    showAppToast("正在上傳 Google Drive 備份…", "success");
+    renderGoogleDriveSettings("正在上傳 Google Drive 備份…");
+
+    const token = await getGoogleAccessToken();
+    const existing = await findGoogleDriveBackupFile(token);
+    const backup = buildBackupPayload();
+    const jsonText = JSON.stringify(backup, null, 2);
+    const metadata = getGoogleDriveBackupMetadata();
+    if (existing?.id) delete metadata.parents;
+    const { boundary, body } = createMultipartBody(metadata, jsonText);
+
+    const url = existing?.id
+      ? `https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(existing.id)}?uploadType=multipart&fields=id,name,modifiedTime`
+      : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime";
+    const method = existing?.id ? "PATCH" : "POST";
+    const result = await requestGoogleDriveApi(token, url, {
+      method,
+      headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
+      body
+    });
+
+    settings.googleDriveBackupFileId = result.id || existing?.id || "";
+    settings.lastGoogleDriveBackupAt = new Date().toISOString();
+    settings.lastExportedAt = settings.lastGoogleDriveBackupAt;
+    saveState();
+    renderBackupReminder();
+    renderGoogleDriveSettings(`Google Drive 備份完成：${formatDateTime(settings.lastGoogleDriveBackupAt)}`);
+    showAppToast("Google Drive 備份完成。", "success");
+  } catch (error) {
+    renderGoogleDriveSettings();
+    await showAppAlert(
+      `Google Drive 備份失敗：${error.message || "請確認 OAuth Client ID、授權來源與 Google Drive API 是否已啟用。"}`,
+      { type: "danger", title: "雲端備份失敗" }
+    );
+  }
+}
+
+async function restoreFromGoogleDrive() {
+  if (!settings.googleClientId) {
+    await showAppAlert("請先貼上 Google OAuth Client ID，再從 Google Drive 還原備份。", { type: "warning", title: "尚未設定 Google 服務" });
+    switchTab("settings");
+    googleClientIdInput?.focus();
+    return;
+  }
+
+  try {
+    showAppToast("正在讀取 Google Drive 備份…", "success");
+    renderGoogleDriveSettings("正在讀取 Google Drive 備份…");
+
+    const token = await getGoogleAccessToken();
+    const file = await findGoogleDriveBackupFile(token);
+    if (!file?.id) {
+      renderGoogleDriveSettings("Google Drive 目前找不到此 App 的雲端備份。");
+      await showAppAlert("Google Drive 目前找不到此 App 的雲端備份。請先執行一次「備份到 Drive」。", { type: "warning", title: "找不到雲端備份" });
+      return;
+    }
+
+    const data = await requestGoogleDriveApi(token, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`);
+    const imported = readImportedState(data);
+    if (!imported) {
+      throw new Error("雲端備份格式不正確，無法還原。");
+    }
+
+    const confirmed = await showAppConfirm(
+      `${buildImportPreviewMessage(imported)}\n\n雲端檔案更新時間：${file.modifiedTime ? formatDateTime(file.modifiedTime) : "未知"}\n\n確定要用這份 Google Drive 備份覆蓋目前瀏覽器資料嗎？`,
+      { title: "從 Google Drive 還原", type: "warning", confirmText: "還原並覆蓋" }
+    );
+    if (!confirmed) {
+      renderGoogleDriveSettings();
+      return;
+    }
+
+    await applyImportedState(imported);
+    settings.googleDriveBackupFileId = file.id;
+    settings.lastGoogleDriveBackupAt = file.modifiedTime || imported.settings?.lastGoogleDriveBackupAt || "";
+    await saveState();
+    render();
+    renderGoogleDriveSettings("已從 Google Drive 還原備份。");
+    showAppToast("已從 Google Drive 還原備份。", "success");
+  } catch (error) {
+    renderGoogleDriveSettings();
+    await showAppAlert(
+      `Google Drive 還原失敗：${error.message || "請確認 OAuth Client ID、授權來源與 Google Drive API 是否已啟用。"}`,
+      { type: "danger", title: "雲端還原失敗" }
+    );
+  }
 }
 
 function getGoogleReminderOverrides(cardList) {
@@ -2309,23 +2596,34 @@ function escapeIcs(value) {
 }
 
 
-const NOTIFIED_KEY = "payment-manager-notified-v1";
+const NOTIFIED_KEY = NOTIFIED_ID;
 
 function getTodayKey() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-function readNotifiedMap() {
+async function readNotifiedMap() {
   try {
-    return JSON.parse(localStorage.getItem(NOTIFIED_KEY) || "{}");
-  } catch {
-    return {};
+    const current = await idbGet(NOTIFIED_KEY);
+    if (current && typeof current === "object") return current;
+
+    const legacyRaw = localStorage.getItem(NOTIFIED_KEY);
+    const legacy = legacyRaw ? JSON.parse(legacyRaw) : {};
+    if (legacy && typeof legacy === "object") {
+      await idbSet(NOTIFIED_KEY, legacy);
+      return legacy;
+    }
+  } catch (error) {
+    console.error("通知紀錄讀取失敗：", error);
   }
+  return {};
 }
 
 function saveNotifiedMap(map) {
-  localStorage.setItem(NOTIFIED_KEY, JSON.stringify(map));
+  idbSet(NOTIFIED_KEY, map).catch(error => {
+    console.error("通知紀錄儲存失敗：", error);
+  });
 }
 
 function supportsNotifications() {
@@ -2395,7 +2693,7 @@ async function checkDueNotifications({ force = false } = {}) {
   if (targets.length === 0) return;
 
   const todayKey = getTodayKey();
-  const notifiedMap = readNotifiedMap();
+  const notifiedMap = await readNotifiedMap();
   let sent = false;
 
   for (const card of targets) {
@@ -2437,6 +2735,7 @@ async function requestNotificationPermission() {
   }
 }
 
+function setupEventListeners() {
 accountSubtabButtons.forEach(button => {
   button.addEventListener("click", () => switchAccountView(button.dataset.accountView));
 });
@@ -2781,6 +3080,8 @@ exportBtn.addEventListener("click", exportData);
 backupNowBtn?.addEventListener("click", exportData);
 saveGoogleClientIdBtn?.addEventListener("click", saveGoogleCalendarClientId);
 disconnectGoogleCalendarBtn?.addEventListener("click", disconnectGoogleCalendar);
+backupToGoogleDriveBtn?.addEventListener("click", backupToGoogleDrive);
+restoreFromGoogleDriveBtn?.addEventListener("click", restoreFromGoogleDrive);
 importBtn.addEventListener("click", () => importFile.click());
 importFile.addEventListener("change", event => {
   const file = event.target.files?.[0];
@@ -2830,7 +3131,31 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-updateNotificationButtons();
-updateAccountVaultUI();
-setInterval(() => checkDueNotifications(), 60 * 60 * 1000);
-render();
+  updateNotificationButtons();
+  updateAccountVaultUI();
+  setInterval(() => checkDueNotifications(), 60 * 60 * 1000);
+  render();
+}
+
+async function initializeApp() {
+  try {
+    loadedState = await loadState();
+  } catch (error) {
+    console.error("IndexedDB 載入失敗：", error);
+    await showAppAlert(
+      "無法開啟瀏覽器資料庫，已先以空白資料啟動。請確認瀏覽器沒有封鎖網站儲存權限。",
+      { type: "danger", title: "資料庫載入失敗" }
+    );
+    loadedState = { cards: [], history: [], encryptedAccounts: null, legacyAccounts: [], settings: defaultSettings() };
+  }
+
+  cards = loadedState.cards;
+  history = loadedState.history;
+  encryptedAccounts = loadedState.encryptedAccounts || null;
+  settings = loadedState.settings;
+  legacyAccounts = loadedState.legacyAccounts || [];
+
+  setupEventListeners();
+}
+
+initializeApp();
