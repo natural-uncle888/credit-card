@@ -1,0 +1,2279 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #f3f6fa;
+  --bg-2: #ffffff;
+  --panel: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --line: #d8e1ea;
+  --primary: #3f6f9f;
+  --primary-deep: #315a82;
+  --primary-soft: #e6eef6;
+  --accent: #7b9bb8;
+  --accent-soft: #edf5fa;
+  --danger: #e11d48;
+  --danger-soft: #ffe4e6;
+  --warning: #f59e0b;
+  --success: #10b981;
+  --radius: 22px;
+  --shadow: 0 14px 34px rgba(31, 41, 55, 0.08);
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+  background: #f3f6fa;
+  color: var(--text);
+}
+
+.app {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+.hero {
+  background: #e7f0f8;
+  color: var(--text);
+  border-radius: 30px;
+  padding: 28px 22px;
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #5f7183;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1, h2, h3, p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 30px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  margin-bottom: 0;
+  color: #5f7183;
+  line-height: 1.6;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.summary-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(216, 225, 234, 0.95);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.summary-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.summary-card strong {
+  font-size: 22px;
+}
+
+.summary-card.danger strong {
+  color: var(--danger);
+}
+
+main {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 16px;
+}
+
+.panel {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+.panel-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.panel-title h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+form {
+  display: grid;
+  gap: 12px;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+input, textarea, select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 13px 12px;
+  font: inherit;
+  background: #f7f9fc;
+  color: var(--text);
+  outline: none;
+}
+
+textarea {
+  resize: vertical;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--primary);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(63, 111, 159, 0.16);
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.primary-btn, .ghost-btn, .text-btn, .small-btn {
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.primary-btn {
+  padding: 14px 16px;
+  background: var(--primary);
+  color: white;
+  font-weight: 700;
+}
+
+.ghost-btn {
+  padding: 10px 13px;
+  color: white;
+  background: rgba(255, 255, 255, 0.14);
+  white-space: nowrap;
+}
+
+.text-btn {
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.empty-state {
+  border: 1px dashed var(--line);
+  border-radius: 20px;
+  padding: 30px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.empty-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.empty-state h3 {
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.empty-state p {
+  margin-bottom: 0;
+}
+
+.card-list {
+  display: grid;
+  gap: 12px;
+}
+
+.bill-card {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 15px;
+  background: #fff;
+}
+
+.bill-card.paid {
+  opacity: 0.68;
+  background: #f7f9fc;
+}
+
+.bill-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.bill-name {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.bill-bank {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.badge {
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  background: var(--primary-soft);
+  color: #3f6f9f;
+}
+
+.badge.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.badge.warning {
+  background: #fef3c7;
+  color: var(--warning);
+}
+
+.badge.success {
+  background: #dcfce7;
+  color: var(--success);
+}
+
+.bill-meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.meta-box {
+  background: #f7f9fc;
+  border-radius: 14px;
+  padding: 11px;
+}
+
+.meta-box span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.meta-box strong {
+  font-size: 15px;
+}
+
+.note {
+  color: var(--muted);
+  background: #f7f9fc;
+  border-radius: 14px;
+  padding: 10px;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+
+.google-sync-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f7f9fc;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.google-sync-line.success {
+  background: #dcfce7;
+  color: var(--success);
+}
+
+.google-sync-line small {
+  color: inherit;
+  opacity: 0.78;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .google-sync-line {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.bill-actions {
+  display: grid;
+  grid-template-columns: 1.1fr 0.8fr 0.8fr;
+  gap: 8px;
+}
+
+.small-btn {
+  padding: 11px 8px;
+  background: #edf3f8;
+  color: var(--text);
+  font-weight: 750;
+}
+
+.small-btn.pay {
+  background: var(--primary);
+  color: white;
+}
+
+.small-btn.delete {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+@media (max-width: 760px) {
+  .app {
+    padding: 14px 12px 28px;
+  }
+
+  .hero {
+    border-radius: 24px;
+    padding: 24px 18px;
+    display: block;
+  }
+
+  .ghost-btn {
+    margin-top: 14px;
+  }
+
+  h1 {
+    font-size: 26px;
+  }
+
+  .summary-grid, main {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-grid {
+    gap: 10px;
+  }
+
+  .two-col, .bill-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+.helper-text {
+  margin: -4px 0 12px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+
+.list-title {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.list-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 760px) {
+  .list-title {
+    display: block;
+  }
+
+  .list-tools {
+    justify-content: stretch;
+    margin-top: 12px;
+  }
+
+  .list-tools .text-btn,
+  .list-tools select {
+    flex: 1 1 30%;
+  }
+}
+
+.history-panel {
+  grid-column: 1 / -1;
+}
+
+.section-desc {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+
+.history-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.history-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.summary-card.compact {
+  box-shadow: none;
+  background: #f7f9fc;
+  border-color: var(--line);
+}
+
+.history-list {
+  display: grid;
+  gap: 8px;
+}
+
+.history-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  background: white;
+}
+
+.history-row strong,
+.history-row span {
+  display: block;
+}
+
+.history-row span {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.history-row b {
+  white-space: nowrap;
+  font-size: 16px;
+}
+
+.empty-state.mini {
+  padding: 14px;
+}
+
+.advanced-actions {
+  grid-template-columns: 1.2fr 1fr 0.8fr 0.8fr;
+}
+
+.list-tools input[type="search"] {
+  min-width: 150px;
+  flex: 1 1 160px;
+  padding: 10px 12px;
+}
+
+@media (max-width: 760px) {
+  .history-summary,
+  .advanced-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .history-row {
+    align-items: flex-start;
+  }
+}
+
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ghost-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+  .hero-actions .ghost-btn {
+    width: 100%;
+  }
+}
+
+.backup-reminder {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 1px solid #fed7aa;
+  border-radius: 20px;
+  background: #fff7ed;
+  color: #9a3412;
+  box-shadow: var(--shadow);
+}
+
+.backup-reminder strong,
+.backup-reminder p {
+  margin: 0;
+}
+
+.backup-reminder p {
+  margin-top: 4px;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.backup-reminder .small-btn {
+  background: #fb923c;
+  color: white;
+  white-space: nowrap;
+}
+
+.strong-note {
+  color: #334155;
+  background: #edf5fa;
+}
+
+@media (max-width: 760px) {
+  .backup-reminder {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .backup-reminder .small-btn {
+    width: 100%;
+  }
+}
+
+.bill-type {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #edf3f8;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.account-panel {
+  grid-column: 1 / -1;
+}
+
+
+.account-vault-lock {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ffffff, #eef6fb);
+}
+
+.account-vault-lock h3 {
+  margin: 0 0 6px;
+  color: #1f2937;
+}
+
+.account-vault-lock p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.account-vault-lock.unlocked {
+  background: #f7fbf8;
+}
+
+.account-vault-lock.unlocked h3::after {
+  content: "　已解鎖";
+  color: #238a4b;
+  font-size: 13px;
+}
+
+.account-vault-form {
+  display: grid;
+  gap: 10px;
+}
+
+.account-vault-form label {
+  font-weight: 800;
+  color: #334155;
+}
+
+.account-vault-form input {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.account-vault-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.account-vault-status {
+  min-height: 20px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.account-vault-status.success {
+  color: #238a4b;
+}
+
+.account-vault-status.error {
+  color: #b42318;
+}
+
+.account-form-shell {
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.account-form-shell > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 14px 16px;
+  font-weight: 900;
+  color: var(--primary);
+  user-select: none;
+}
+
+.account-form-shell > summary::-webkit-details-marker,
+.account-summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-form {
+  margin: 0;
+  padding: 0 16px 16px;
+}
+
+.account-import-box {
+  padding: 0 16px 16px;
+}
+
+.import-format-note {
+  margin: 10px 0 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #f7f9fc;
+  color: #52606d;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.import-format-note code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #294d70;
+  font-weight: 800;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.account-list {
+  display: grid;
+  gap: 10px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.account-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 0;
+  background: #fff;
+  overflow: hidden;
+}
+
+.account-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.account-summary h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.account-summary p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.account-more {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #edf3f8;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 7px 10px;
+}
+
+.account-accordion[open] .account-more {
+  color: var(--primary);
+}
+
+.account-detail-body {
+  border-top: 1px solid var(--line);
+  padding: 12px 14px 14px;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.account-actions .small-btn {
+  padding: 9px 10px;
+}
+
+.account-password {
+  margin: 12px 0;
+  padding: 10px;
+  border-radius: 14px;
+  background: #f7f9fc;
+  color: #334155;
+  word-break: break-all;
+}
+
+.note a {
+  color: #3f6f9f;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+@media (max-width: 760px) {
+  .account-list {
+    max-height: 360px;
+  }
+
+  .account-summary {
+    align-items: flex-start;
+  }
+
+  .account-actions {
+    justify-content: stretch;
+  }
+
+  .account-actions .small-btn {
+    flex: 1 1 42%;
+  }
+}
+
+/* 分頁版面 */
+.tab-nav {
+  position: sticky;
+  top: 10px;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 14px 0 16px;
+  padding: 8px;
+  border: 1px solid rgba(216, 225, 234, 0.95);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow);
+}
+
+.tab-btn {
+  border: 0;
+  border-radius: 16px;
+  padding: 12px 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: var(--primary);
+  color: white;
+}
+
+.tab-shell {
+  display: block;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+.bills-grid {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 16px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.setting-card {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 16px;
+  background: #f7f9fc;
+}
+
+.setting-card h3 {
+  margin-bottom: 8px;
+}
+
+.setting-card p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-actions .small-btn {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 760px) {
+  body {
+    padding-bottom: 82px;
+  }
+
+  .app {
+    padding-bottom: 16px;
+  }
+
+  .tab-nav {
+    position: fixed;
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    top: auto;
+    margin: 0;
+    border-radius: 24px;
+  }
+
+  .tab-btn {
+    padding: 12px 6px;
+    font-size: 14px;
+  }
+
+  .bills-grid,
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-actions .small-btn {
+    flex-basis: 100%;
+  }
+}
+
+
+/* 清爽藍白柔和風格覆蓋 */
+.hero {
+  box-shadow: 0 14px 34px rgba(31, 41, 55, 0.09);
+}
+
+.account-vault-lock {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ffffff, #eef6fb);
+}
+
+.account-vault-lock h3 {
+  margin: 0 0 6px;
+  color: #1f2937;
+}
+
+.account-vault-lock p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.account-vault-lock.unlocked {
+  background: #f7fbf8;
+}
+
+.account-vault-lock.unlocked h3::after {
+  content: "　已解鎖";
+  color: #238a4b;
+  font-size: 13px;
+}
+
+.account-vault-form {
+  display: grid;
+  gap: 10px;
+}
+
+.account-vault-form label {
+  font-weight: 800;
+  color: #334155;
+}
+
+.account-vault-form input {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.account-vault-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.account-vault-status {
+  min-height: 20px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.account-vault-status.success {
+  color: #238a4b;
+}
+
+.account-vault-status.error {
+  color: #b42318;
+}
+
+.account-form-shell {
+  border-color: rgba(216, 225, 234, 0.95);
+}
+
+.panel,
+.summary-card {
+  backdrop-filter: blur(10px);
+}
+
+.primary-btn,
+.small-btn.pay,
+.tab-btn.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 8px 18px rgba(63, 111, 159, 0.16);
+}
+
+.primary-btn:hover,
+.small-btn.pay:hover,
+.tab-btn.active:hover {
+  filter: brightness(1.03);
+}
+
+.ghost-btn {
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.text-btn {
+  color: var(--primary);
+}
+
+.small-btn {
+  color: #315a82;
+}
+
+.small-btn.delete {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.badge {
+  background: var(--primary-soft);
+  color: #3f6f9f;
+}
+
+.bill-type,
+.account-more {
+  background: #edf5fa;
+  color: #3f6f9f;
+}
+
+.tab-nav {
+  box-shadow: 0 10px 24px rgba(31, 41, 55, 0.08);
+}
+
+.tab-btn:not(.active):hover {
+  background: #edf3f8;
+  color: var(--primary);
+}
+
+.meta-box,
+.note,
+.account-password,
+.summary-card.compact,
+.setting-card,
+.bill-card.paid {
+  background: #f7f9fc;
+}
+
+input,
+textarea,
+select {
+  background: #f7f9fc;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
+}
+
+
+/* 低飽和霧面藍灰風格：移除亮眼漸層 */
+.hero {
+  background: #e7f0f8;
+  color: var(--text);
+}
+
+.hero .eyebrow,
+.hero .subtitle {
+  color: #5f7183;
+}
+
+.primary-btn,
+.small-btn.pay,
+.tab-btn.active {
+  background: #3f6f9f;
+  color: #ffffff;
+}
+
+.primary-btn:hover,
+.small-btn.pay:hover,
+.tab-btn.active:hover {
+  filter: brightness(0.98);
+}
+
+body {
+  background: #f3f6fa;
+}
+
+.tab-nav {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.ghost-btn {
+  background: rgba(255, 255, 255, 0.55);
+  color: #315a82;
+  border-color: rgba(63, 111, 159, 0.22);
+}
+
+@media (max-width: 760px) {
+  .account-vault-lock {
+    grid-template-columns: 1fr;
+  }
+
+  .account-vault-actions .primary-btn,
+  .account-vault-actions .text-btn {
+    width: 100%;
+  }
+}
+
+/* 帳號解鎖區塊版面修正：避免父層 panel 被前面的覆蓋樣式改成雙欄，造成文字被擠成直排 */
+.account-panel {
+  display: block !important;
+  padding: 18px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(216, 225, 234, 0.95) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+.account-panel .panel-title {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.account-vault-lock {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px) !important;
+  gap: 22px !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin: 0 0 16px !important;
+  padding: 22px !important;
+  border: 1px solid rgba(216, 225, 234, 0.95) !important;
+  border-radius: 22px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f3f8fc 100%) !important;
+  box-shadow: 0 12px 28px rgba(31, 41, 55, 0.06) !important;
+}
+
+.account-vault-lock > div,
+.account-vault-form {
+  min-width: 0;
+}
+
+.account-vault-lock h3 {
+  margin: 0 0 10px !important;
+  font-size: 22px !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0.02em;
+  color: #1f2937 !important;
+  word-break: keep-all;
+}
+
+.account-vault-lock p {
+  max-width: 540px;
+  margin: 0 !important;
+  color: #64748b !important;
+  font-size: 14px;
+  line-height: 1.75 !important;
+}
+
+.account-vault-form {
+  display: grid !important;
+  gap: 12px !important;
+  padding: 16px;
+  border: 1px solid rgba(216, 225, 234, 0.9);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.account-vault-form label {
+  display: grid !important;
+  gap: 8px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  color: #334155 !important;
+}
+
+.account-vault-form input {
+  width: 100% !important;
+  margin: 0 !important;
+  height: 46px;
+}
+
+.account-vault-actions {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px !important;
+  align-items: center;
+}
+
+.account-vault-actions .primary-btn,
+.account-vault-actions .text-btn {
+  min-height: 44px;
+}
+
+.account-vault-status {
+  min-height: 18px !important;
+  margin: 0 !important;
+  font-size: 13px !important;
+  line-height: 1.5;
+}
+
+.account-vault-lock.unlocked {
+  background: linear-gradient(135deg, #ffffff 0%, #f3fbf6 100%) !important;
+}
+
+.account-vault-lock.unlocked h3::after {
+  content: "已解鎖";
+  display: inline-flex;
+  margin-left: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #238a4b;
+  font-size: 12px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+@media (max-width: 760px) {
+  .account-panel .panel-title {
+    display: block !important;
+  }
+
+  .account-vault-lock {
+    grid-template-columns: 1fr !important;
+    padding: 18px !important;
+    gap: 16px !important;
+  }
+
+  .account-vault-form {
+    padding: 14px;
+  }
+
+  .account-vault-actions .primary-btn,
+  .account-vault-actions .text-btn {
+    width: 100%;
+  }
+}
+
+
+/* 全站版面修正：避免帳號解鎖區塊樣式誤套到其他卡片 */
+.panel {
+  display: block;
+  margin-bottom: 0;
+  padding: 18px;
+  background: var(--panel);
+}
+.summary-card {
+  display: block;
+  margin-bottom: 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.92);
+}
+.bill-card,
+.account-card,
+.history-row,
+.setting-card {
+  margin-bottom: 0;
+  background: #fff;
+}
+.bill-card,
+.account-card,
+.setting-card {
+  display: block;
+}
+.history-row {
+  display: flex;
+}
+.account-panel {
+  display: block !important;
+}
+.account-vault-lock {
+  display: grid !important;
+}
+
+/* v10 帳單頁重新設計：表單改為滿版分段，不再左右壓縮 */
+#tab-bills .bills-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+#tab-bills .form-panel,
+#tab-bills .list-panel {
+  width: 100%;
+}
+
+#tab-bills .form-panel {
+  padding: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfe 100%);
+}
+
+.bill-form {
+  display: grid;
+  gap: 16px;
+}
+
+.bill-form-section {
+  border: 1px solid rgba(216, 225, 234, 0.95);
+  border-radius: 20px;
+  background: rgba(247, 249, 252, 0.78);
+  padding: 16px;
+}
+
+.form-section-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.section-step {
+  flex: 0 0 auto;
+  min-width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.form-section-head h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.form-section-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.bill-form-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.basic-fields {
+  grid-template-columns: minmax(160px, 0.7fr) minmax(220px, 1.15fr) minmax(220px, 1.15fr);
+}
+
+.four-fields {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.payment-fields {
+  grid-template-columns: minmax(170px, 0.9fr) minmax(230px, 1.25fr) minmax(140px, 0.65fr) minmax(260px, 1.35fr);
+}
+
+.wide-field {
+  min-width: 0;
+}
+
+.note-section textarea {
+  min-height: 96px;
+}
+
+.bill-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.bill-form-actions .primary-btn {
+  min-width: 180px;
+}
+
+#tab-bills .list-panel .panel-title.list-title {
+  align-items: flex-start;
+}
+
+#tab-bills .list-tools {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(150px, 0.75fr) minmax(150px, 0.75fr);
+  gap: 10px;
+  width: min(560px, 100%);
+}
+
+@media (max-width: 980px) {
+  .basic-fields,
+  .four-fields,
+  .payment-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .payment-fields .wide-field {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  #tab-bills .form-panel {
+    padding: 16px;
+  }
+
+  .bill-form-section {
+    padding: 14px;
+  }
+
+  .form-section-head {
+    gap: 10px;
+  }
+
+  .section-step {
+    min-width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+
+  .basic-fields,
+  .four-fields,
+  .payment-fields,
+  #tab-bills .list-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-fields .wide-field {
+    grid-column: auto;
+  }
+
+  .bill-form-actions .primary-btn {
+    width: 100%;
+  }
+}
+
+
+/* 主密碼更改表單 */
+.account-vault-side {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.change-password-form {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(59, 111, 157, 0.18);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(31, 41, 55, 0.05);
+}
+
+.change-password-form h4 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: #1f2937;
+}
+
+.change-password-form p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.change-password-form label {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.change-password-form input {
+  width: 100%;
+  height: 46px;
+}
+
+@media (max-width: 760px) {
+  .account-vault-side {
+    width: 100%;
+  }
+}
+
+/* 系統化確認彈窗 / 提醒 */
+.app-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.app-dialog-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.app-dialog {
+  width: min(430px, 100%);
+  max-height: min(88vh, 760px);
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid rgba(216, 225, 234, 0.92);
+  border-radius: 26px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.22);
+  overflow: hidden;
+  transform: translateY(10px) scale(0.98);
+  transition: transform 0.18s ease;
+}
+
+.app-dialog-backdrop.show .app-dialog {
+  transform: translateY(0) scale(1);
+}
+
+.app-dialog-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+  font-size: 24px;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px rgba(63, 111, 159, 0.08);
+}
+
+.app-dialog.dialog-success .app-dialog-icon {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.app-dialog.dialog-warning .app-dialog-icon {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.app-dialog.dialog-danger .app-dialog-icon {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.app-dialog-content {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-dialog h3 {
+  margin: 2px 0 8px;
+  font-size: 20px;
+  line-height: 1.35;
+  color: #172033;
+}
+
+.app-dialog-message {
+  display: grid;
+  gap: 6px;
+  color: #5b6778;
+  font-size: 15px;
+  line-height: 1.7;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  max-height: none;
+  padding-right: 6px;
+  overscroll-behavior: contain;
+}
+
+.app-dialog-message::-webkit-scrollbar {
+  width: 8px;
+}
+
+.app-dialog-message::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.55);
+  border-radius: 999px;
+}
+
+.app-dialog-message p {
+  margin: 0;
+}
+
+.app-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+  background: linear-gradient(180deg, rgba(248, 251, 253, 0.05) 0%, rgba(248, 251, 253, 0.96) 28%);
+}
+
+.app-dialog-actions .primary-btn,
+.app-dialog-actions .secondary-btn {
+  min-width: 92px;
+  min-height: 42px;
+  padding-inline: 18px;
+}
+
+.primary-btn.danger-action {
+  background: var(--danger);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(225, 29, 72, 0.18);
+}
+
+.primary-btn.danger-action:hover {
+  background: #be123c;
+}
+
+.app-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 10000;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 13px 18px;
+  border-radius: 999px;
+  background: #172033;
+  color: #ffffff;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.22);
+  font-size: 14px;
+  font-weight: 800;
+  transform: translate(-50%, 16px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.app-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.app-toast.toast-success {
+  background: #0f766e;
+}
+
+.app-toast.toast-error {
+  background: #be123c;
+}
+
+@media (max-width: 560px) {
+  .app-dialog {
+    width: min(430px, 100%);
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 12px;
+    max-height: min(90vh, 720px);
+    padding: 18px;
+    border-radius: 24px;
+  }
+
+  .app-dialog-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    font-size: 22px;
+  }
+
+  .app-dialog-message {
+    font-size: 14px;
+  }
+
+  .app-dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding-bottom: max(2px, env(safe-area-inset-bottom));
+  }
+
+  .app-dialog-actions .primary-btn,
+  .app-dialog-actions .secondary-btn {
+    width: 100%;
+  }
+}
+
+/* 帳號主密碼錯誤提示強化 */
+.account-vault-lock.has-error {
+  border-color: rgba(225, 29, 72, 0.32) !important;
+  background: linear-gradient(135deg, #fff 0%, #fff5f6 100%) !important;
+  box-shadow: 0 16px 34px rgba(225, 29, 72, 0.10) !important;
+}
+
+.account-vault-form.has-error {
+  border-color: rgba(225, 29, 72, 0.35) !important;
+  background: rgba(255, 247, 248, 0.92) !important;
+}
+
+.account-vault-form input.input-error,
+.account-vault-form input.input-error:focus {
+  border-color: rgba(225, 29, 72, 0.85) !important;
+  box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.12) !important;
+  background: #fffafa !important;
+}
+
+.account-vault-status.error {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  min-height: auto !important;
+  padding: 10px 12px;
+  border: 1px solid rgba(225, 29, 72, 0.22);
+  border-radius: 14px;
+  background: #fff1f2;
+  color: #be123c !important;
+  line-height: 1.45;
+}
+
+.account-vault-status.error::before {
+  content: "!";
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #be123c;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.account-vault-status.success {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  border-radius: 14px;
+  background: #f0fdf4;
+  line-height: 1.45;
+}
+
+.account-vault-status.success::before {
+  content: "✓";
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+@keyframes accountShake {
+  0%, 100% { transform: translateX(0); }
+  18% { transform: translateX(-7px); }
+  36% { transform: translateX(7px); }
+  54% { transform: translateX(-5px); }
+  72% { transform: translateX(5px); }
+}
+
+.shake-error,
+.input-shake {
+  animation: accountShake 0.42s ease both;
+}
+
+
+/* v14 帳單頁：新增帳單與帳單清單改成子分頁，避免清單被表單推到太下方 */
+.bill-subtab-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 8px;
+  border: 1px solid rgba(216, 225, 234, 0.95);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.bill-subtab-btn {
+  border: 0;
+  border-radius: 15px;
+  padding: 12px 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.bill-subtab-btn.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.bill-subtab-btn:not(.active):hover {
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+}
+
+#tab-bills .bills-grid {
+  display: block !important;
+}
+
+#tab-bills .bill-view-panel {
+  display: none !important;
+}
+
+#tab-bills .bill-view-panel.active {
+  display: block !important;
+}
+
+#tab-bills .list-panel,
+#tab-bills .form-panel {
+  width: 100%;
+}
+
+#tab-bills .list-panel {
+  min-height: 360px;
+}
+
+@media (max-width: 640px) {
+  .bill-subtab-nav {
+    position: sticky;
+    top: 8px;
+    z-index: 8;
+  }
+
+  .bill-subtab-btn {
+    padding: 11px 8px;
+    font-size: 14px;
+  }
+}
+
+
+
+/* v23 帳號頁：新增帳號 / 帳號資料子分頁與搜尋 */
+.account-workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.account-subtab-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(216, 225, 234, 0.95);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.account-subtab-btn {
+  border: 0;
+  border-radius: 15px;
+  padding: 12px 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.account-subtab-btn.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.account-subtab-btn:not(.active):hover {
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+}
+
+.account-view-panel {
+  display: none;
+}
+
+.account-view-panel.active {
+  display: block;
+}
+
+.account-view-panel,
+#accountListPanel {
+  min-width: 0;
+}
+
+.account-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.account-section-head h3 {
+  margin: 0 0 4px;
+  color: #172033;
+  font-size: 20px;
+}
+
+.account-list-head {
+  align-items: end;
+}
+
+.account-search-field {
+  width: min(360px, 100%);
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.account-search-field input {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 14px;
+}
+
+#accountListPanel .account-import-shell {
+  margin-bottom: 12px;
+}
+
+#accountListPanel .empty-state.mini {
+  margin-top: 12px;
+}
+
+@media (max-width: 640px) {
+  .account-subtab-nav {
+    position: sticky;
+    top: 8px;
+    z-index: 8;
+  }
+
+  .account-subtab-btn {
+    padding: 11px 8px;
+    font-size: 14px;
+  }
+
+  .account-section-head,
+  .account-list-head {
+    display: grid;
+    gap: 10px;
+  }
+
+  .account-search-field {
+    width: 100%;
+  }
+}
+
+.google-calendar-card label {
+  margin-top: 10px;
+}
+
+.setting-status {
+  min-height: 20px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* v19：首頁近期提醒、帳單卡片警示、匯入預覽 */
+.due-overview {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: -4px 0 16px;
+}
+
+.due-overview-card {
+  border: 1px solid rgba(216, 225, 234, 0.95);
+  border-radius: 20px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.due-overview-card.today {
+  border-color: rgba(220, 38, 38, 0.28);
+  background: #fff7f7;
+}
+
+.due-overview-card.soon {
+  border-color: rgba(217, 119, 6, 0.24);
+  background: #fffbeb;
+}
+
+.due-overview-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.due-overview-head span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.due-overview-head strong {
+  font-size: 24px;
+}
+
+.due-overview-card.today .due-overview-head strong {
+  color: var(--danger);
+}
+
+.due-overview-card.soon .due-overview-head strong {
+  color: var(--warning);
+}
+
+.due-overview-list {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.due-overview-list.empty {
+  padding: 7px 0 2px;
+}
+
+.due-overview-item {
+  width: 100%;
+  border: 1px solid rgba(216, 225, 234, 0.92);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+}
+
+.due-overview-item:hover {
+  border-color: rgba(63, 111, 159, 0.35);
+  background: #fff;
+}
+
+.due-overview-item span {
+  display: grid;
+  gap: 3px;
+}
+
+.due-overview-item strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.due-overview-item em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 12px;
+}
+
+.due-overview-item b {
+  white-space: nowrap;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.due-overview-more {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.bill-card {
+  position: relative;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.bill-card.due-overdue,
+.bill-card.due-today {
+  border-color: rgba(220, 38, 38, 0.46);
+  background: #fff7f7;
+  box-shadow: 0 12px 28px rgba(220, 38, 38, 0.08);
+}
+
+.bill-card.due-near {
+  border-color: rgba(217, 119, 6, 0.44);
+  background: #fffbeb;
+  box-shadow: 0 12px 28px rgba(217, 119, 6, 0.08);
+}
+
+.bill-card.due-soon {
+  border-color: rgba(234, 179, 8, 0.36);
+  background: #fefce8;
+}
+
+.bill-card.due-paid,
+.bill-card.paid {
+  border-color: rgba(22, 163, 74, 0.18);
+}
+
+.bill-card.focus-flash {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 4px rgba(63, 111, 159, 0.18), 0 16px 30px rgba(31, 41, 55, 0.14);
+}
+
+.google-sync-line {
+  border: 1px solid rgba(216, 225, 234, 0.9);
+  color: var(--muted);
+  align-items: center;
+}
+
+.google-sync-line.success {
+  background: #f0fdf4;
+  border-color: rgba(22, 163, 74, 0.22);
+  color: var(--success);
+}
+
+.google-sync-line.normal {
+  background: #f7f9fc;
+  color: var(--muted);
+}
+
+.google-sync-line a {
+  color: var(--primary);
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.app-dialog-choice-actions .danger-action {
+  background: var(--danger);
+  color: white;
+}
+
+@media (max-width: 760px) {
+  .due-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .due-overview-item {
+    align-items: flex-start;
+  }
+}
+
+/* v25 帳號安全鎖定與批次刪除 */
+.account-vault-actions .primary-btn:disabled,
+.account-bulk-toolbar .small-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.account-bulk-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(120, 144, 170, 0.28);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.account-select-all,
+.account-select-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.account-select-row {
+  align-self: stretch;
+  padding: 0 0.2rem 0 0;
+}
+
+.account-select-row input,
+.account-select-all input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--primary, #3f6f9f);
+}
+
+.account-summary {
+  gap: 0.75rem;
+}
+
+.account-summary > div {
+  min-width: 0;
+  flex: 1;
+}
+
+#selectedAccountsCount {
+  color: var(--muted, #64748b);
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 680px) {
+  .account-bulk-toolbar {
+    justify-content: flex-start;
+  }
+}

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>繳費管理</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="stylesheet" href="style.css?v=24-account-scrollfix" />
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Payment Reminder</p>
+        <h1>繳費管理</h1>
+        <p class="subtitle">用分頁管理帳單、帳號密碼、繳費紀錄與備份設定，支援信用卡、水電費、電信費、保險費等帳單。</p>
+      </div>
+    </header>
+
+    <nav class="tab-nav" aria-label="主要功能分頁">
+      <button class="tab-btn active" type="button" data-tab="bills" aria-selected="true">帳單</button>
+      <button class="tab-btn" type="button" data-tab="accounts" aria-selected="false">帳號</button>
+      <button class="tab-btn" type="button" data-tab="history" aria-selected="false">紀錄</button>
+      <button class="tab-btn" type="button" data-tab="settings" aria-selected="false">設定</button>
+    </nav>
+
+    <main class="tab-shell">
+      <section id="tab-bills" class="tab-panel active" data-tab-panel="bills">
+        <section class="summary-grid" aria-label="繳費摘要">
+          <div class="summary-card">
+            <span>未繳筆數</span>
+            <strong id="unpaidCount">0</strong>
+          </div>
+          <div class="summary-card danger">
+            <span>提醒中</span>
+            <strong id="urgentCount">0</strong>
+          </div>
+          <div class="summary-card">
+            <span>本期未繳合計</span>
+            <strong id="totalAmount">$0</strong>
+          </div>
+        </section>
+
+        <section class="due-overview" aria-label="近期繳費提醒">
+          <article class="due-overview-card today">
+            <div class="due-overview-head">
+              <span>今天到期</span>
+              <strong id="todayDueCount">0</strong>
+            </div>
+            <div id="todayDueList" class="due-overview-list">今天沒有到期帳單。</div>
+          </article>
+          <article class="due-overview-card soon">
+            <div class="due-overview-head">
+              <span>7 天內到期</span>
+              <strong id="weekDueCount">0</strong>
+            </div>
+            <div id="weekDueList" class="due-overview-list">7 天內沒有即將到期帳單。</div>
+          </article>
+        </section>
+
+        <div class="bill-subtab-nav" role="tablist" aria-label="帳單頁面子分頁">
+          <button class="bill-subtab-btn active" type="button" data-bill-view="list" aria-selected="true">帳單清單</button>
+          <button class="bill-subtab-btn" type="button" data-bill-view="form" aria-selected="false">新增帳單</button>
+        </div>
+
+        <div class="bills-grid">
+          <section class="panel form-panel bill-view-panel" data-bill-view-panel="form">
+            <div class="panel-title">
+              <h2 id="formTitle">新增帳單</h2>
+              <button id="resetBtn" class="text-btn hidden">取消編輯</button>
+            </div>
+
+            <form id="cardForm" class="bill-form">
+              <input type="hidden" id="cardId" />
+
+              <div class="bill-form-section">
+                <div class="form-section-head">
+                  <span class="section-step">01</span>
+                  <div>
+                    <h3>基本資料</h3>
+                    <p>先填帳單來源與名稱，之後清單比較好辨識。</p>
+                  </div>
+                </div>
+                <div class="bill-form-fields basic-fields">
+                  <label>
+                    帳單類型
+                    <select id="billType" required>
+                      <option value="credit-card">信用卡</option>
+                      <option value="utilities">水電費</option>
+                      <option value="telecom">電信費</option>
+                      <option value="insurance">保險費</option>
+                      <option value="subscription">訂閱費</option>
+                      <option value="rent">房租</option>
+                      <option value="loan">貸款</option>
+                      <option value="other">其他</option>
+                    </select>
+                  </label>
+                  <label>
+                    單位 / 銀行 / 公司名稱
+                    <input id="bankName" type="text" placeholder="例如：玉山銀行、台電、中華電信、保險公司" required />
+                  </label>
+                  <label>
+                    帳單名稱（選填）
+                    <input id="cardName" type="text" placeholder="例如：U Bear 卡、家裡電費、手機門號，可不填" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="bill-form-section">
+                <div class="form-section-head">
+                  <span class="section-step">02</span>
+                  <div>
+                    <h3>日期與金額</h3>
+                    <p>截止日與金額會用來計算提醒、逾期與本期未繳合計。</p>
+                  </div>
+                </div>
+                <div class="bill-form-fields four-fields">
+                  <label>
+                    帳單日
+                    <input id="statementDate" type="date" required />
+                  </label>
+                  <label>
+                    繳費截止日
+                    <input id="dueDate" type="date" required />
+                  </label>
+                  <label>
+                    應繳金額
+                    <input id="amount" type="number" min="0" inputmode="numeric" placeholder="可先留空，之後再補金額" />
+                  </label>
+                  <label>
+                    最低應繳金額
+                    <input id="minimumAmount" type="number" min="0" inputmode="numeric" placeholder="例如：1000，可填 0" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="bill-form-section">
+                <div class="form-section-head">
+                  <span class="section-step">03</span>
+                  <div>
+                    <h3>繳費與提醒</h3>
+                    <p>設定繳費方式、循環模式與提前提醒天數。</p>
+                  </div>
+                </div>
+                <div class="bill-form-fields payment-fields">
+                  <label>
+                    繳費方式
+                    <select id="paymentMethod" required>
+                      <option value="manual">手動繳費</option>
+                      <option value="auto">自動扣繳</option>
+                    </select>
+                  </label>
+                  <label>
+                    帳單模式
+                    <select id="billingMode" required>
+                      <option value="recurring">循環：已繳後建立下期</option>
+                      <option value="manual">手動：已繳後不建立下期</option>
+                    </select>
+                  </label>
+                  <label>
+                    提前提醒天數
+                    <input id="remindDays" type="number" min="0" inputmode="numeric" value="3" required />
+                  </label>
+                  <label class="wide-field">
+                    繳費帳戶備註
+                    <input id="paymentAccount" type="text" placeholder="例如：中信活存、玉山帳戶，或記得先補錢" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="bill-form-section note-section">
+                <div class="form-section-head">
+                  <span class="section-step">04</span>
+                  <div>
+                    <h3>備註</h3>
+                    <p>可記錄自動扣繳、補錢、特殊繳費方式等提醒。</p>
+                  </div>
+                </div>
+                <label>
+                  備註
+                  <textarea id="note" rows="3" placeholder="例如：確認是否自動扣繳"></textarea>
+                </label>
+                <p class="helper-text">自動扣繳也建議保留提醒，用來確認扣款是否成功。帳單模式選「循環」時，已繳後會建立下期；選「手動」時，只會留下繳費紀錄，不會自動產生下一期。</p>
+              </div>
+
+              <div class="bill-form-actions">
+                <button class="primary-btn" type="submit">儲存帳單</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel list-panel bill-view-panel active" data-bill-view-panel="list">
+            <div class="panel-title list-title">
+              <h2>帳單清單</h2>
+              <div class="list-tools">
+                <input id="searchInput" type="search" placeholder="搜尋名稱" aria-label="搜尋帳單名稱或公司名稱" />
+                <select id="typeFilterSelect" aria-label="篩選帳單類型">
+                  <option value="all">全部類型</option>
+                  <option value="credit-card">信用卡</option>
+                  <option value="utilities">水電費</option>
+                  <option value="telecom">電信費</option>
+                  <option value="insurance">保險費</option>
+                  <option value="subscription">訂閱費</option>
+                  <option value="rent">房租</option>
+                  <option value="loan">貸款</option>
+                  <option value="other">其他</option>
+                </select>
+                <select id="filterSelect" aria-label="篩選狀態">
+                  <option value="all">全部狀態</option>
+                  <option value="unpaid">未繳</option>
+                  <option value="paid">已繳</option>
+                  <option value="urgent">提醒中</option>
+                  <option value="overdue">已逾期</option>
+                </select>
+              </div>
+            </div>
+            <div id="emptyState" class="empty-state">
+              <div class="empty-icon">💳</div>
+              <h3>目前沒有資料</h3>
+              <p>先新增一筆帳單，就能看到到期提醒。</p>
+            </div>
+            <div id="cardList" class="card-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="tab-accounts" class="tab-panel" data-tab-panel="accounts">
+        <section class="panel account-panel">
+          <div class="panel-title list-title">
+            <div>
+              <h2>帳號密碼備忘 <span class="version-badge">帳號分頁搜尋版 v24</span></h2>
+              <p class="section-desc">獨立放在帳號分頁，避免帳單頁一直往下延伸。資料只存在目前裝置瀏覽器，重要密碼仍建議使用專業密碼管理器。</p>
+            </div>
+          </div>
+
+
+
+          <section id="accountVaultLock" class="account-vault-lock locked" aria-live="polite">
+            <div class="account-vault-copy">
+              <h3>帳號資料已鎖定</h3>
+              <p>請輸入主密碼解鎖。第一次使用時，這組主密碼會用來加密帳號資料；之後忘記主密碼將無法還原。</p>
+            </div>
+            <div class="account-vault-side">
+              <form id="accountVaultForm" class="account-vault-form">
+                <label>
+                  主密碼
+                  <input id="accountVaultPassword" type="password" autocomplete="current-password" placeholder="至少 8 碼" required />
+                </label>
+                <div class="account-vault-actions">
+                  <button id="unlockAccountBtn" class="primary-btn" type="submit">解鎖帳號資料</button>
+                  <button id="forgotMasterPasswordBtn" class="text-btn" type="button">忘記主密碼 / 重設帳號資料</button>
+                  <button id="changeMasterPasswordBtn" class="text-btn hidden" type="button">更改主密碼</button>
+                  <button id="lockAccountBtn" class="text-btn hidden" type="button">重新鎖定</button>
+                </div>
+                <p id="accountVaultStatus" class="account-vault-status"></p>
+              </form>
+
+              <form id="changeMasterPasswordForm" class="change-password-form hidden">
+                <div>
+                  <h4>更改主密碼</h4>
+                  <p>帳號資料會用新主密碼重新加密。完成後，之後請用新主密碼解鎖。</p>
+                </div>
+                <label>
+                  新主密碼
+                  <input id="newMasterPassword" type="password" autocomplete="new-password" placeholder="至少 8 碼" required />
+                </label>
+                <label>
+                  再輸入一次新主密碼
+                  <input id="confirmMasterPassword" type="password" autocomplete="new-password" placeholder="確認新主密碼" required />
+                </label>
+                <div class="account-vault-actions">
+                  <button class="primary-btn" type="submit">儲存新主密碼</button>
+                  <button id="cancelChangeMasterPasswordBtn" class="text-btn" type="button">取消</button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <div id="accountWorkspace" class="account-workspace hidden">
+            <div class="account-subtab-nav" role="tablist" aria-label="帳號頁面子分頁">
+              <button class="account-subtab-btn active" type="button" data-account-view="form" aria-selected="true">新增帳號</button>
+              <button class="account-subtab-btn" type="button" data-account-view="list" aria-selected="false">帳號資料</button>
+            </div>
+
+            <section id="accountFormDetails" class="account-view-panel active" data-account-view-panel="form">
+              <div class="account-section-head">
+                <div>
+                  <h3>新增 / 編輯帳號密碼</h3>
+                  <p class="section-desc">新增繳費網站、帳號、密碼提示或備註。儲存後可到「帳號資料」查看。</p>
+                </div>
+              </div>
+
+              <form id="accountForm" class="account-form">
+                <input type="hidden" id="accountId" />
+                <div class="two-col">
+                  <label>
+                    服務名稱
+                    <input id="accountService" type="text" placeholder="例如：台電、健保快易通、電信官網" required />
+                  </label>
+                  <label>
+                    帳號 / 用戶編號
+                    <input id="accountUsername" type="text" placeholder="例如：Email、手機號碼、用戶編號" required />
+                  </label>
+                </div>
+                <div class="two-col">
+                  <label>
+                    密碼 / 備忘
+                    <input id="accountPassword" type="password" placeholder="可留空或只填提示" autocomplete="off" />
+                  </label>
+                  <label>
+                    繳費網址（選填）
+                    <input id="accountUrl" type="url" placeholder="https://..." />
+                  </label>
+                </div>
+                <label>
+                  備註
+                  <textarea id="accountNote" rows="2" placeholder="例如：用自然人憑證登入、扣款帳戶、客服電話"></textarea>
+                </label>
+                <div class="form-actions">
+                  <button class="primary-btn" type="submit">儲存帳號</button>
+                  <button id="resetAccountBtn" class="text-btn hidden" type="button">取消編輯</button>
+                </div>
+              </form>
+            </section>
+
+            <section id="accountListPanel" class="account-view-panel" data-account-view-panel="list">
+              <div class="account-section-head account-list-head">
+                <div>
+                  <h3>帳號資料</h3>
+                  <p class="section-desc">用關鍵字搜尋服務名稱或帳號，不用往下滑很久找資料。</p>
+                </div>
+                <label class="account-search-field">
+                  搜尋帳號
+                  <input id="accountSearchInput" type="search" placeholder="搜尋服務名稱、帳號 / 用戶編號" autocomplete="off" />
+                </label>
+                <div id="accountBulkToolbar" class="account-bulk-toolbar hidden" aria-live="polite">
+                  <label class="account-select-all">
+                    <input id="selectAllAccounts" type="checkbox" />
+                    全選目前列表
+                  </label>
+                  <span id="selectedAccountsCount">已選 0 筆</span>
+                  <button id="deleteSelectedAccountsBtn" class="small-btn delete" type="button" disabled>刪除已選</button>
+                </div>
+              </div>
+
+              <details id="accountImportDetails" class="account-form-shell account-import-shell hidden">
+                <summary>⇩ 匯入瀏覽器帳號密碼 CSV</summary>
+                <div class="account-import-box">
+                  <p class="section-desc">支援 Google/Chrome 密碼管理員、Microsoft Edge 等常見瀏覽器匯出的 CSV。匯入前會先預覽，確認後才會加密存入帳號區。</p>
+                  <div class="import-format-note">
+                    <strong>支援欄位：</strong>name / service、url、username、password、note。<br />
+                    Chrome、Edge 常見格式為：<code>name,url,username,password</code>
+                  </div>
+                  <div class="form-actions">
+                    <button id="importBrowserPasswordsBtn" class="small-btn" type="button">選擇 CSV 檔匯入</button>
+                    <input id="browserPasswordImportFile" class="visually-hidden" type="file" accept=".csv,text/csv" />
+                  </div>
+                </div>
+              </details>
+
+              <div id="accountEmptyState" class="empty-state mini">
+                <p>還沒有帳號密碼備忘。</p>
+              </div>
+              <div id="accountList" class="account-list"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+
+      <section id="tab-history" class="tab-panel" data-tab-panel="history">
+        <section class="panel history-panel">
+          <div class="panel-title list-title">
+            <div>
+              <h2>繳費紀錄</h2>
+              <p class="section-desc">按下已繳後會自動記錄；循環帳單會建立下期，手動帳單只保留繳費紀錄。</p>
+            </div>
+            <div class="history-actions">
+              <button id="toggleHistoryBtn" class="text-btn hidden" type="button">查看全部</button>
+              <button id="clearHistoryBtn" class="text-btn" type="button">清除紀錄</button>
+            </div>
+          </div>
+          <div class="history-summary">
+            <div class="summary-card compact">
+              <span>本月已繳</span>
+              <strong id="monthPaidTotal">$0</strong>
+            </div>
+            <div class="summary-card compact">
+              <span>總繳費紀錄</span>
+              <strong id="historyCount">0</strong>
+            </div>
+          </div>
+          <div id="historyList" class="history-list"></div>
+        </section>
+      </section>
+
+      <section id="tab-settings" class="tab-panel" data-tab-panel="settings">
+        <section class="panel settings-panel">
+          <div class="panel-title">
+            <div>
+              <h2>設定與備份</h2>
+              <p class="section-desc">通知、加入主畫面、匯出匯入與備份提醒集中放在這裡。</p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <div class="setting-card">
+              <h3>通知與安裝</h3>
+              <p>瀏覽器通知需要開啟 App 才會檢查；需要更穩定的提醒時，可以使用帳單卡片裡的「上傳 Google 日曆」。</p>
+              <div class="settings-actions">
+                <button id="notifyBtn" class="small-btn" type="button">開啟繳費通知</button>
+                <button id="testNotifyBtn" class="small-btn hidden" type="button">測試通知</button>
+                <button id="installBtn" class="small-btn hidden" type="button">加入主畫面</button>
+              </div>
+            </div>
+
+
+            <div class="setting-card google-calendar-card">
+              <h3>Google 日曆</h3>
+              <p>貼上你的 Google OAuth Client ID 後，帳單清單內的按鈕會把繳費提醒直接新增到你的主要 Google 日曆。</p>
+              <label>
+                OAuth Client ID
+                <input id="googleClientId" type="text" inputmode="text" autocomplete="off" placeholder="例如：xxxxx.apps.googleusercontent.com" />
+              </label>
+              <p id="googleCalendarStatus" class="setting-status">尚未設定 OAuth Client ID。</p>
+              <div class="settings-actions">
+                <button id="saveGoogleClientIdBtn" class="small-btn" type="button">儲存 Client ID</button>
+                <button id="disconnectGoogleCalendarBtn" class="small-btn" type="button">中斷本次授權</button>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <h3>資料備份</h3>
+              <p>資料存在目前裝置瀏覽器，換手機或清除資料前，請先匯出 JSON 備份檔。</p>
+              <div class="settings-actions">
+                <button id="exportBtn" class="small-btn" type="button">匯出資料</button>
+                <button id="importBtn" class="small-btn" type="button">匯入資料</button>
+                <input id="importFile" class="visually-hidden" type="file" accept="application/json,.json" />
+              </div>
+            </div>
+          </div>
+
+          <section id="backupReminder" class="backup-reminder hidden" aria-live="polite">
+            <div>
+              <strong>建議備份資料</strong>
+              <p id="backupReminderText">你已經一段時間沒有匯出備份。</p>
+            </div>
+            <button id="backupNowBtn" class="small-btn" type="button">立即匯出</button>
+          </section>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="app.js?v=24-account-scrollfix"></script>
+</body>
+</html>
