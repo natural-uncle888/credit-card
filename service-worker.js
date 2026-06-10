@@ -1,4 +1,4 @@
-const CACHE_NAME = 'payment-manager-v28-dialog-fix';
+const CACHE_NAME = 'payment-manager-v29-compact-bill-list';
 const ASSETS = [
   "./",
   "./index.html",

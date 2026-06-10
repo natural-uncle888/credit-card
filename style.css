@@ -2286,3 +2286,147 @@ body {
     justify-content: flex-start;
   }
 }
+
+/* Compact bill list: keep mobile list short; full fields move into the detail dialog. */
+.bill-card-compact {
+  padding: 13px 14px;
+}
+
+.compact-top {
+  align-items: flex-start;
+}
+
+.bill-title-wrap {
+  min-width: 0;
+}
+
+.bill-title-wrap .bill-name,
+.compact-subline {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-bill-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 10px;
+}
+
+.compact-bill-summary > div {
+  background: #f7f9fc;
+  border-radius: 14px;
+  padding: 9px 10px;
+  min-width: 0;
+}
+
+.compact-bill-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.compact-bill-summary strong {
+  display: block;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-hint {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.compact-hint.success {
+  color: var(--success);
+}
+
+.compact-hint.warning {
+  color: var(--warning);
+}
+
+.compact-hint.danger {
+  color: var(--danger);
+}
+
+.compact-actions {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.bill-detail-dialog {
+  max-width: 560px;
+}
+
+.bill-detail-content {
+  max-height: min(62vh, 560px);
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.bill-detail-status {
+  margin-bottom: 10px;
+}
+
+.bill-detail-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.bill-detail-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f7f9fc;
+}
+
+.bill-detail-row span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.bill-detail-row strong {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.bill-detail-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+@media (max-width: 760px) {
+  .bill-card-compact {
+    border-radius: 18px;
+  }
+
+  .compact-bill-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .compact-bill-summary > div:first-child {
+    grid-column: span 2;
+  }
+
+  .compact-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .bill-detail-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

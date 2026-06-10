@@ -1435,56 +1435,34 @@ function renderCards() {
     const googleSync = getGoogleSyncState(card);
     const article = document.createElement("article");
     const dueTone = getDueTone(card);
-    article.className = `bill-card ${card.isPaid ? "paid" : ""} due-${dueTone}`;
+    article.className = `bill-card bill-card-compact ${card.isPaid ? "paid" : ""} due-${dueTone}`;
+    article.dataset.cardId = card.id;
     article.innerHTML = `
-      <div class="bill-top">
-        <div>
+      <div class="bill-top compact-top">
+        <div class="bill-title-wrap">
           <h3 class="bill-name">${escapeHtml(getDisplayName(card))}</h3>
-          <div class="bill-bank">${card.cardName ? escapeHtml(card.bankName) : "帳單名稱未填"}</div>
-          <div class="bill-type">${getBillTypeText(card.billType)}</div>
+          <div class="bill-bank compact-subline">${getBillTypeText(card.billType)}${card.cardName ? `｜${escapeHtml(card.bankName)}` : ""}</div>
         </div>
         <span class="badge ${status.type}">${status.text}</span>
       </div>
-      <div class="bill-meta">
-        <div class="meta-box">
-          <span>帳單類型</span>
-          <strong>${getBillTypeText(card.billType)}</strong>
-        </div>
-        <div class="meta-box">
-          <span>帳單日</span>
-          <strong>${card.statementDate}</strong>
-        </div>
-        <div class="meta-box">
+      <div class="compact-bill-summary">
+        <div>
           <span>截止日</span>
           <strong>${card.dueDate}</strong>
         </div>
-        <div class="meta-box">
-          <span>應繳金額</span>
+        <div>
+          <span>應繳</span>
           <strong>${Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount)}</strong>
         </div>
-        <div class="meta-box">
-          <span>最低應繳</span>
-          <strong>${Number(card.minimumAmount || 0) === 0 ? "未設定" : formatMoney(card.minimumAmount)}</strong>
-        </div>
-        <div class="meta-box">
-          <span>繳費方式</span>
+        <div>
+          <span>方式</span>
           <strong>${getPaymentMethodText(card)}</strong>
         </div>
-        <div class="meta-box">
-          <span>帳單模式</span>
-          <strong>${getBillingModeText(card)}</strong>
-        </div>
-        <div class="meta-box">
-          <span>提醒</span>
-          <strong>提前 ${Number(card.remindDays || 0)} 天</strong>
-        </div>
       </div>
-      ${card.paymentAccount ? `<p class="note strong-note">繳費帳戶：${escapeHtml(card.paymentAccount)}</p>` : ""}
-      ${card.paymentMethod === "auto" ? `<p class="note strong-note">自動扣繳：提醒你確認扣款是否成功。</p>` : ""}
-      ${card.note ? `<p class="note">${escapeHtml(card.note)}</p>` : ""}
-      ${card.lastPaidSummary ? `<p class="note">上期已繳：${escapeHtml(card.lastPaidSummary.dueDate)}，${formatMoney(card.lastPaidSummary.amount)}</p>` : ""}
-      <p class="note google-sync-line ${googleSync.type}"><span>${escapeHtml(googleSync.text)}</span>${card.googleCalendarEventHtmlLink ? `<a href="${escapeHtml(card.googleCalendarEventHtmlLink)}" target="_blank" rel="noopener noreferrer">開啟</a>` : ""}</p>
-      <div class="bill-actions advanced-actions">
+      ${card.paymentMethod === "auto" ? `<p class="compact-hint">自動扣繳，記得確認扣款。</p>` : ""}
+      ${card.googleCalendarEventId ? `<p class="compact-hint ${googleSync.type}">${escapeHtml(googleSync.text)}</p>` : ""}
+      <div class="bill-actions advanced-actions compact-actions">
+        <button class="small-btn" data-action="detail" data-id="${card.id}">詳情</button>
         ${card.isPaid ? "" : `<button class="small-btn pay" data-action="next-cycle" data-id="${card.id}">${card.billingMode === "manual" ? "標記已繳" : "已繳並建立下期"}</button>`}
         <button class="small-btn" data-action="google-calendar" data-id="${card.id}">${escapeHtml(googleSync.buttonText)}</button>
         <button class="small-btn" data-action="edit" data-id="${card.id}">編輯</button>
@@ -1492,6 +1470,78 @@ function renderCards() {
       </div>
     `;
     cardList.appendChild(article);
+  });
+}
+
+function buildBillDetailRows(card, googleSync) {
+  const rows = [
+    ["帳單類型", getBillTypeText(card.billType)],
+    ["單位 / 銀行 / 公司", card.bankName || "未填"],
+    ["帳單名稱", card.cardName || "未填"],
+    ["帳單日", card.statementDate],
+    ["繳費截止日", card.dueDate],
+    ["應繳金額", Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount)],
+    ["最低應繳金額", Number(card.minimumAmount || 0) === 0 ? "未設定" : formatMoney(card.minimumAmount)],
+    ["繳費方式", getPaymentMethodText(card)],
+    ["帳單模式", getBillingModeText(card)],
+    ["提前提醒", `提前 ${Number(card.remindDays || 0)} 天`],
+    ["繳費帳戶備註", card.paymentAccount || "未填"],
+    ["備註", card.note || "未填"],
+    ["Google 日曆", googleSync.text]
+  ];
+
+  if (card.lastPaidSummary) {
+    rows.push(["上期已繳", `${card.lastPaidSummary.dueDate}，${formatMoney(card.lastPaidSummary.amount)}`]);
+  }
+
+  return rows;
+}
+
+function showBillDetail(card) {
+  const googleSync = getGoogleSyncState(card);
+  const { backdrop, dialog } = createDialogElements();
+  const rows = buildBillDetailRows(card, googleSync)
+    .map(([label, value]) => `
+      <div class="bill-detail-row">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </div>
+    `)
+    .join("");
+
+  dialog.classList.add("dialog-info", "bill-detail-dialog");
+  dialog.innerHTML = `
+    <div class="app-dialog-icon" aria-hidden="true">i</div>
+    <div class="app-dialog-content">
+      <h3 id="appDialogTitle">${escapeHtml(getDisplayName(card))}</h3>
+      <div id="appDialogMessage" class="app-dialog-message bill-detail-content">
+        <div class="bill-detail-status"><span class="badge ${getStatus(card).type}">${getStatus(card).text}</span></div>
+        <div class="bill-detail-grid">${rows}</div>
+        ${card.googleCalendarEventHtmlLink ? `<a class="bill-detail-link" href="${escapeHtml(card.googleCalendarEventHtmlLink)}" target="_blank" rel="noopener noreferrer">開啟 Google 日曆</a>` : ""}
+      </div>
+      <div class="app-dialog-actions">
+        <button type="button" class="secondary-btn" data-dialog-action="close">關閉</button>
+      </div>
+    </div>
+  `;
+
+  const closeButton = dialog.querySelector('[data-dialog-action="close"]');
+  let onKeydown;
+  const finish = () => {
+    if (onKeydown) document.removeEventListener("keydown", onKeydown);
+    closeDialog(backdrop);
+  };
+  closeButton?.addEventListener("click", finish);
+  backdrop.addEventListener("click", event => {
+    if (event.target === backdrop) finish();
+  });
+  onKeydown = event => {
+    if (event.key === "Escape" || event.key === "Enter") finish();
+  };
+  document.addEventListener("keydown", onKeydown);
+  requestAnimationFrame(() => {
+    backdrop.classList.add("show");
+    closeButton?.focus();
   });
 }
 
@@ -2982,6 +3032,11 @@ cardList.addEventListener("click", async event => {
   const action = button.dataset.action;
   const card = cards.find(item => item.id === id);
   if (!card) return;
+
+  if (action === "detail") {
+    showBillDetail(card);
+    return;
+  }
 
   if (action === "next-cycle") {
     const isManualMode = card.billingMode === "manual";
