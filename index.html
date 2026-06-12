@@ -6,7 +6,7 @@
   <title>繳費管理</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2563eb" />
-  <link rel="stylesheet" href="style.css?v=29-compact-bill-list" />
+  <link rel="stylesheet" href="style.css?v=34-rent-utilities-total" />
 </head>
 <body>
   <div class="app">
@@ -144,6 +144,26 @@
                     <span id="amountLabelText">應繳金額</span>
                     <input id="amount" type="number" min="0" inputmode="numeric" placeholder="可先留空，之後再補金額" />
                   </label>
+                  <div id="rentExtraField" class="rent-extra-field hidden">
+                    <div class="rent-extra-head">
+                      <strong>房租額外費用</strong>
+                      <span>雙數月份可手動加水費、電費，系統會自動加總。</span>
+                    </div>
+                    <div class="rent-extra-grid">
+                      <label>
+                        水費
+                        <input id="rentWaterAmount" type="number" min="0" inputmode="numeric" placeholder="例如：300" />
+                      </label>
+                      <label>
+                        電費
+                        <input id="rentElectricAmount" type="number" min="0" inputmode="numeric" placeholder="例如：1200" />
+                      </label>
+                      <div class="rent-total-preview" aria-live="polite">
+                        <span>本期房租總額</span>
+                        <strong id="rentTotalPreview">NT$0</strong>
+                      </div>
+                    </div>
+                  </div>
                   <label id="amountModeField">
                     金額模式
                     <select id="amountMode" required>
@@ -491,6 +511,6 @@
   </div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="app.js?v=29-compact-bill-list"></script>
+  <script src="app.js?v=34-rent-utilities-total"></script>
 </body>
 </html>

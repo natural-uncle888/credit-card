@@ -79,6 +79,8 @@ const statementDateLabelText = document.querySelector("#statementDateLabelText")
 const dueDateLabelText = document.querySelector("#dueDateLabelText");
 const monthlyPaymentDayLabelText = document.querySelector("#monthlyPaymentDayLabelText");
 const amountLabelText = document.querySelector("#amountLabelText");
+const rentExtraField = document.querySelector("#rentExtraField");
+const rentTotalPreview = document.querySelector("#rentTotalPreview");
 
 let loadedState = { cards: [], history: [], encryptedAccounts: null, legacyAccounts: [], settings: defaultSettings() };
 let cards = [];
@@ -163,9 +165,9 @@ const BILL_TYPE_CONFIGS = {
     cardLabel: "房租名稱（選填）",
     bankPlaceholder: "例如：房東王先生、台中租屋處",
     cardPlaceholder: "例如：每月房租，可不填",
-    title: "每月付款日與金額",
-    hint: "房租屬於每月固定付款，只需要設定每月幾號付款。",
-    note: "房租不需要帳單日，系統會依每月付款日建立下一期，金額預設固定保留。"
+    title: "每月付款日與房租總額",
+    hint: "房租可填固定房租，雙數月份再手動加上水費與電費，系統會自動加總本期應繳。",
+    note: "房租不需要帳單日；固定房租會保留到下期，水費與電費會在建立下期時清空。"
   },
   management: {
     schedule: "monthly",
@@ -212,6 +214,8 @@ const fields = {
   statementDate: document.querySelector("#statementDate"),
   dueDate: document.querySelector("#dueDate"),
   amount: document.querySelector("#amount"),
+  rentWaterAmount: document.querySelector("#rentWaterAmount"),
+  rentElectricAmount: document.querySelector("#rentElectricAmount"),
   amountMode: document.querySelector("#amountMode"),
   minimumAmount: document.querySelector("#minimumAmount"),
   monthlyPaymentDay: document.querySelector("#monthlyPaymentDay"),
@@ -1040,6 +1044,47 @@ function updateAccountVaultUI() {
   if (!accountVaultUnlocked) hideChangeMasterPasswordForm();
 }
 
+
+function normalizeMoneyInput(value) {
+  return Math.max(0, Number(value || 0));
+}
+
+function getRentExtraAmounts(card) {
+  if (normalizeBillType(card?.billType) !== "rent") {
+    return { base: 0, water: 0, electric: 0, total: normalizeMoneyInput(card?.amount) };
+  }
+  const water = normalizeMoneyInput(card?.rentWaterAmount);
+  const electric = normalizeMoneyInput(card?.rentElectricAmount);
+  let base = normalizeMoneyInput(card?.rentBaseAmount);
+  if (!base) {
+    const total = normalizeMoneyInput(card?.amount);
+    base = Math.max(0, total - water - electric);
+  }
+  const total = base + water + electric;
+  return { base, water, electric, total };
+}
+
+function calculateRentTotalFromForm() {
+  const base = normalizeMoneyInput(fields.amount?.value);
+  const water = normalizeMoneyInput(fields.rentWaterAmount?.value);
+  const electric = normalizeMoneyInput(fields.rentElectricAmount?.value);
+  return { base, water, electric, total: base + water + electric };
+}
+
+function renderRentTotalPreview() {
+  if (!rentTotalPreview) return;
+  const { total } = calculateRentTotalFromForm();
+  rentTotalPreview.textContent = formatMoney(total);
+}
+
+function getRentBreakdownText(card) {
+  const { base, water, electric } = getRentExtraAmounts(card);
+  const parts = [`固定房租 ${formatMoney(base)}`];
+  if (water > 0) parts.push(`水費 ${formatMoney(water)}`);
+  if (electric > 0) parts.push(`電費 ${formatMoney(electric)}`);
+  return parts.join(" + ");
+}
+
 function normalizeCard(card) {
   if (!card || typeof card !== "object") return null;
   if (!String(card.bankName || "").trim()) return null;
@@ -1051,6 +1096,8 @@ function normalizeCard(card) {
   if (creditCardBill && !isValidDateString(card.statementDate)) return null;
   const recurringDay = monthlyPayment ? Math.min(31, Math.max(1, Number(card.recurringDay || String(card.dueDate).slice(-2)))) : 0;
   const amountMode = normalizeAmountMode(card.amountMode || getDefaultAmountMode(billType));
+  const rentAmounts = getRentExtraAmounts({ ...card, billType });
+  const normalizedAmount = billType === "rent" ? rentAmounts.total : normalizeMoneyInput(card.amount);
 
   return {
     id: String(card.id || crypto.randomUUID()),
@@ -1060,7 +1107,10 @@ function normalizeCard(card) {
     statementDate: creditCardBill ? card.statementDate : "",
     dueDate: card.dueDate,
     recurringDay,
-    amount: Math.max(0, Number(card.amount || 0)),
+    amount: normalizedAmount,
+    rentBaseAmount: billType === "rent" ? rentAmounts.base : 0,
+    rentWaterAmount: billType === "rent" ? rentAmounts.water : 0,
+    rentElectricAmount: billType === "rent" ? rentAmounts.electric : 0,
     amountMode,
     minimumAmount: creditCardBill ? Math.max(0, Number(card.minimumAmount || 0)) : 0,
     paymentMethod: card.paymentMethod === "auto" ? "auto" : "manual",
@@ -1091,7 +1141,10 @@ function normalizeHistoryItem(item) {
     statementDate: isValidDateString(item.statementDate) ? item.statementDate : "",
     dueDate: item.dueDate,
     recurringDay: Math.min(31, Math.max(0, Number(item.recurringDay || 0))),
-    amount: Math.max(0, Number(item.amount || 0)),
+    amount: normalizeMoneyInput(item.amount),
+    rentBaseAmount: normalizeBillType(item.billType) === "rent" ? getRentExtraAmounts(item).base : 0,
+    rentWaterAmount: normalizeBillType(item.billType) === "rent" ? getRentExtraAmounts(item).water : 0,
+    rentElectricAmount: normalizeBillType(item.billType) === "rent" ? getRentExtraAmounts(item).electric : 0,
     amountMode: normalizeAmountMode(item.amountMode || getDefaultAmountMode(item.billType)),
     minimumAmount: isCreditCardBillType(item.billType) ? Math.max(0, Number(item.minimumAmount || 0)) : 0,
     paymentMethod: item.paymentMethod === "auto" ? "auto" : "manual",
@@ -1381,6 +1434,9 @@ function addPaymentHistory(card, paidAt = new Date().toISOString()) {
     periodDate,
     recurringDay: card.recurringDay || 0,
     amount: Number(card.amount || 0),
+    rentBaseAmount: normalizeBillType(card.billType) === "rent" ? Number(card.rentBaseAmount || 0) : 0,
+    rentWaterAmount: normalizeBillType(card.billType) === "rent" ? Number(card.rentWaterAmount || 0) : 0,
+    rentElectricAmount: normalizeBillType(card.billType) === "rent" ? Number(card.rentElectricAmount || 0) : 0,
     amountMode: normalizeAmountMode(card.amountMode || getDefaultAmountMode(card.billType)),
     minimumAmount: Number(card.minimumAmount || 0),
     paymentMethod: card.paymentMethod || "manual",
@@ -1395,6 +1451,9 @@ function moveToNextBillingCycle(card) {
   const previousDueDate = card.dueDate;
   const previousAmount = Number(card.amount || 0);
   const previousMinimumAmount = Number(card.minimumAmount || 0);
+  const previousRentBaseAmount = Number(card.rentBaseAmount || 0);
+  const previousRentWaterAmount = Number(card.rentWaterAmount || 0);
+  const previousRentElectricAmount = Number(card.rentElectricAmount || 0);
   const paidAt = new Date().toISOString();
   const monthlyPayment = isMonthlyPaymentType(card.billType);
   const creditCardBill = isCreditCardBillType(card.billType);
@@ -1404,7 +1463,17 @@ function moveToNextBillingCycle(card) {
 
   card.statementDate = creditCardBill ? addOneMonth(card.statementDate) : "";
   card.dueDate = addOneMonth(card.dueDate);
-  card.amount = carryAmount ? previousAmount : 0;
+  if (normalizeBillType(card.billType) === "rent") {
+    card.rentBaseAmount = previousRentBaseAmount || previousAmount;
+    card.rentWaterAmount = 0;
+    card.rentElectricAmount = 0;
+    card.amount = card.rentBaseAmount;
+  } else {
+    card.amount = carryAmount ? previousAmount : 0;
+    card.rentBaseAmount = 0;
+    card.rentWaterAmount = 0;
+    card.rentElectricAmount = 0;
+  }
   card.minimumAmount = creditCardBill ? 0 : 0;
   if (!monthlyPayment) card.recurringDay = 0;
   card.isPaid = false;
@@ -1413,6 +1482,9 @@ function moveToNextBillingCycle(card) {
     statementDate: previousStatementDate,
     dueDate: previousDueDate,
     amount: previousAmount,
+    rentBaseAmount: previousRentBaseAmount,
+    rentWaterAmount: previousRentWaterAmount,
+    rentElectricAmount: previousRentElectricAmount,
     minimumAmount: previousMinimumAmount
   };
   clearGoogleSyncFields(card);
@@ -1427,6 +1499,9 @@ function markPaidWithoutNextCycle(card) {
     statementDate: card.statementDate,
     dueDate: card.dueDate,
     amount: Number(card.amount || 0),
+    rentBaseAmount: Number(card.rentBaseAmount || 0),
+    rentWaterAmount: Number(card.rentWaterAmount || 0),
+    rentElectricAmount: Number(card.rentElectricAmount || 0),
     minimumAmount: Number(card.minimumAmount || 0)
   };
 }
@@ -1531,6 +1606,11 @@ function getBillListAmountHtml(card) {
         待輸入
       </button>
     `;
+  }
+  if (normalizeBillType(card.billType) === "rent") {
+    const { water, electric } = getRentExtraAmounts(card);
+    const hint = water > 0 || electric > 0 ? `<small class="bill-amount-breakdown">${escapeHtml(getRentBreakdownText(card))}</small>` : "";
+    return `<strong>${formatMoney(amount)}</strong>${hint}`;
   }
   return `<strong>${formatMoney(amount)}</strong>`;
 }
@@ -1831,6 +1911,9 @@ function buildBillDetailRows(card, googleSync) {
     ["應繳金額", Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount)],
     ["金額模式", getAmountModeText(card)]
   );
+  if (normalizeBillType(card.billType) === "rent") {
+    rows.push(["房租明細", getRentBreakdownText(card)]);
+  }
   if (isCreditCardBillType(card.billType)) {
     rows.push(["最低應繳金額", Number(card.minimumAmount || 0) === 0 ? "未設定" : formatMoney(card.minimumAmount)]);
   }
@@ -2323,6 +2406,7 @@ function updateBillFormMode({ preserveAmountMode = false } = {}) {
   dueDateField?.classList.toggle("hidden", monthlyPayment);
   monthlyPaymentDayField?.classList.toggle("hidden", !monthlyPayment);
   minimumAmountField?.classList.toggle("hidden", !creditCardBill);
+  rentExtraField?.classList.toggle("hidden", billType !== "rent");
   paymentScheduleHint?.classList.remove("hidden");
 
   if (bankNameLabelText) bankNameLabelText.textContent = config.bankLabel;
@@ -2332,7 +2416,7 @@ function updateBillFormMode({ preserveAmountMode = false } = {}) {
   if (statementDateLabelText) statementDateLabelText.textContent = "帳單日";
   if (dueDateLabelText) dueDateLabelText.textContent = dueOnly ? "繳費截止日" : "繳費截止日";
   if (monthlyPaymentDayLabelText) monthlyPaymentDayLabelText.textContent = billType === "subscription" || billType === "loan" ? "每月扣款日" : "每月付款日";
-  if (amountLabelText) amountLabelText.textContent = config.defaultAmountMode === "fixed" ? "固定金額" : "應繳金額";
+  if (amountLabelText) amountLabelText.textContent = billType === "rent" ? "固定房租" : (config.defaultAmountMode === "fixed" ? "固定金額" : "應繳金額");
 
   if (fields.statementDate) fields.statementDate.required = creditCardBill;
   if (fields.dueDate) fields.dueDate.required = !monthlyPayment;
@@ -2348,6 +2432,11 @@ function updateBillFormMode({ preserveAmountMode = false } = {}) {
   }
   if (monthlyPayment && !fields.monthlyPaymentDay?.value) fields.monthlyPaymentDay.value = "10";
   if (!creditCardBill && fields.minimumAmount) fields.minimumAmount.value = "";
+  if (billType !== "rent") {
+    if (fields.rentWaterAmount) fields.rentWaterAmount.value = "";
+    if (fields.rentElectricAmount) fields.rentElectricAmount.value = "";
+  }
+  renderRentTotalPreview();
 }
 
 function resetForm() {
@@ -2361,6 +2450,8 @@ function resetForm() {
   fields.paymentAccount.value = "";
   fields.remindDays.value = 3;
   fields.monthlyPaymentDay.value = "";
+  if (fields.rentWaterAmount) fields.rentWaterAmount.value = "";
+  if (fields.rentElectricAmount) fields.rentElectricAmount.value = "";
   updateBillFormMode();
   formTitle.textContent = "新增帳單";
   const formTabButton = document.querySelector('[data-bill-view="form"]');
@@ -2672,6 +2763,7 @@ function buildGoogleCalendarDescription(cardList) {
     return [
       `帳單類型：${getBillTypeText(card.billType)}`,
       `應繳金額：${Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount)}`,
+      normalizeBillType(card.billType) === "rent" ? `房租明細：${getRentBreakdownText(card)}` : "",
       `最低應繳：${Number(card.minimumAmount || 0) === 0 ? "未設定" : formatMoney(card.minimumAmount)}`,
       `繳費方式：${getPaymentMethodText(card)}`,
       card.paymentAccount ? `繳費帳戶：${card.paymentAccount}` : "",
@@ -2683,6 +2775,7 @@ function buildGoogleCalendarDescription(cardList) {
     `${index + 1}. ${getDisplayName(card)}`,
     `   帳單類型：${getBillTypeText(card.billType)}`,
     `   應繳金額：${Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount)}`,
+    normalizeBillType(card.billType) === "rent" ? `   房租明細：${getRentBreakdownText(card)}` : "",
     `   最低應繳：${Number(card.minimumAmount || 0) === 0 ? "未設定" : formatMoney(card.minimumAmount)}`,
     `   繳費方式：${getPaymentMethodText(card)}`,
     card.paymentAccount ? `   繳費帳戶：${card.paymentAccount}` : "",
@@ -3368,6 +3461,7 @@ form.addEventListener("submit", async event => {
   const creditCardBill = scheduleType === "credit-card";
   const recurringDay = monthlyPayment ? Number(fields.monthlyPaymentDay.value || 0) : 0;
   const dueDateValue = monthlyPayment ? getNextDueDateFromDay(recurringDay) : fields.dueDate.value;
+  const rentAmounts = normalizeBillType(fields.billType.value) === "rent" ? calculateRentTotalFromForm() : { base: 0, water: 0, electric: 0, total: fields.amount.value === "" ? 0 : Number(fields.amount.value) };
 
   const card = normalizeCard({
     id: fields.cardId.value || crypto.randomUUID(),
@@ -3377,7 +3471,10 @@ form.addEventListener("submit", async event => {
     statementDate: creditCardBill ? fields.statementDate.value : "",
     dueDate: dueDateValue,
     recurringDay,
-    amount: fields.amount.value === "" ? 0 : Number(fields.amount.value),
+    amount: normalizeBillType(fields.billType.value) === "rent" ? rentAmounts.total : (fields.amount.value === "" ? 0 : Number(fields.amount.value)),
+    rentBaseAmount: normalizeBillType(fields.billType.value) === "rent" ? rentAmounts.base : 0,
+    rentWaterAmount: normalizeBillType(fields.billType.value) === "rent" ? rentAmounts.water : 0,
+    rentElectricAmount: normalizeBillType(fields.billType.value) === "rent" ? rentAmounts.electric : 0,
     amountMode: fields.amountMode.value,
     minimumAmount: creditCardBill ? Number(fields.minimumAmount.value || 0) : 0,
     paymentMethod: fields.paymentMethod.value,
@@ -3399,6 +3496,9 @@ form.addEventListener("submit", async event => {
       || existing.dueDate !== card.dueDate
       || Number(existing.recurringDay || 0) !== Number(card.recurringDay || 0)
       || Number(existing.amount || 0) !== Number(card.amount || 0)
+      || Number(existing.rentBaseAmount || 0) !== Number(card.rentBaseAmount || 0)
+      || Number(existing.rentWaterAmount || 0) !== Number(card.rentWaterAmount || 0)
+      || Number(existing.rentElectricAmount || 0) !== Number(card.rentElectricAmount || 0)
       || normalizeAmountMode(existing.amountMode || getDefaultAmountMode(existing.billType)) !== normalizeAmountMode(card.amountMode)
       || Number(existing.minimumAmount || 0) !== Number(card.minimumAmount || 0);
     card.isPaid = existing.isPaid && !changedBillDetails;
@@ -3526,7 +3626,12 @@ cardList.addEventListener("click", async event => {
     fields.statementDate.value = card.statementDate || "";
     fields.dueDate.value = card.dueDate;
     fields.monthlyPaymentDay.value = isMonthlyPaymentType(card.billType) ? String(getMonthlyPaymentDay(card)) : "";
-    fields.amount.value = Number(card.amount || 0) === 0 ? "" : card.amount;
+    const rentAmounts = getRentExtraAmounts(card);
+    fields.amount.value = normalizeBillType(card.billType) === "rent"
+      ? (Number(rentAmounts.base || 0) === 0 ? "" : rentAmounts.base)
+      : (Number(card.amount || 0) === 0 ? "" : card.amount);
+    if (fields.rentWaterAmount) fields.rentWaterAmount.value = normalizeBillType(card.billType) === "rent" && rentAmounts.water > 0 ? rentAmounts.water : "";
+    if (fields.rentElectricAmount) fields.rentElectricAmount.value = normalizeBillType(card.billType) === "rent" && rentAmounts.electric > 0 ? rentAmounts.electric : "";
     fields.amountMode.value = normalizeAmountMode(card.amountMode || getDefaultAmountMode(card.billType));
     fields.minimumAmount.value = isCreditCardBillType(card.billType) ? (card.minimumAmount || "") : "";
     fields.paymentMethod.value = card.paymentMethod || "manual";
@@ -3559,6 +3664,9 @@ billSubtabButtons.forEach(button => {
 filterSelect.addEventListener("change", renderCards);
 typeFilterSelect?.addEventListener("change", renderCards);
 fields.billType?.addEventListener("change", () => updateBillFormMode());
+[fields.amount, fields.rentWaterAmount, fields.rentElectricAmount].forEach(input => {
+  input?.addEventListener("input", renderRentTotalPreview);
+});
 searchInput.addEventListener("input", renderCards);
 resetBtn.addEventListener("click", resetForm);
 exportBtn.addEventListener("click", exportData);

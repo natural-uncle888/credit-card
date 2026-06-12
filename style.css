@@ -1436,6 +1436,71 @@ body {
   min-width: 0;
 }
 
+.rent-extra-field {
+  grid-column: 1 / -1;
+  padding: 14px;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  border-radius: 18px;
+  background: rgba(239, 246, 255, 0.72);
+}
+
+.rent-extra-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.rent-extra-head strong {
+  color: var(--primary-deep);
+  font-size: 14px;
+}
+
+.rent-extra-head span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.rent-extra-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.rent-total-preview {
+  min-height: 46px;
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.rent-total-preview span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rent-total-preview strong {
+  color: var(--primary-deep);
+  font-size: 18px;
+}
+
+.bill-amount-breakdown {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
 .note-section textarea {
   min-height: 96px;
 }
@@ -2642,5 +2707,12 @@ body {
 
   .compact-bill-summary > div:first-child {
     grid-column: span 2;
+  }
+}
+
+
+@media (max-width: 760px) {
+  .rent-extra-grid {
+    grid-template-columns: 1fr;
   }
 }
