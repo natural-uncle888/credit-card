@@ -11,6 +11,8 @@ const todayDueCount = document.querySelector("#todayDueCount");
 const todayDueList = document.querySelector("#todayDueList");
 const weekDueCount = document.querySelector("#weekDueCount");
 const weekDueList = document.querySelector("#weekDueList");
+const monthDueCount = document.querySelector("#monthDueCount");
+const monthDueList = document.querySelector("#monthDueList");
 const resetBtn = document.querySelector("#resetBtn");
 const formTitle = document.querySelector("#formTitle");
 const installBtn = document.querySelector("#installBtn");
@@ -64,6 +66,19 @@ const tabButtons = document.querySelectorAll(".tab-btn");
 const tabPanels = document.querySelectorAll("[data-tab-panel]");
 const billSubtabButtons = document.querySelectorAll("[data-bill-view]");
 const billSubtabPanels = document.querySelectorAll("[data-bill-view-panel]");
+const statementDateField = document.querySelector("#statementDateField");
+const dueDateField = document.querySelector("#dueDateField");
+const monthlyPaymentDayField = document.querySelector("#monthlyPaymentDayField");
+const minimumAmountField = document.querySelector("#minimumAmountField");
+const dateAmountTitle = document.querySelector("#dateAmountTitle");
+const dateAmountHint = document.querySelector("#dateAmountHint");
+const paymentScheduleHint = document.querySelector("#paymentScheduleHint");
+const bankNameLabelText = document.querySelector("#bankNameLabelText");
+const cardNameLabelText = document.querySelector("#cardNameLabelText");
+const statementDateLabelText = document.querySelector("#statementDateLabelText");
+const dueDateLabelText = document.querySelector("#dueDateLabelText");
+const monthlyPaymentDayLabelText = document.querySelector("#monthlyPaymentDayLabelText");
+const amountLabelText = document.querySelector("#amountLabelText");
 
 let loadedState = { cards: [], history: [], encryptedAccounts: null, legacyAccounts: [], settings: defaultSettings() };
 let cards = [];
@@ -85,6 +100,109 @@ const ACCOUNT_MAX_UNLOCK_ATTEMPTS = 5;
 const ACCOUNT_LOCKOUT_MS = 60 * 60 * 1000;
 const GOOGLE_SCOPES = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/drive.appdata";
 const GOOGLE_DRIVE_BACKUP_FILE_NAME = "payment-manager-backup.json";
+const BILL_TYPE_CONFIGS = {
+  "credit-card": {
+    schedule: "credit-card",
+    defaultAmountMode: "variable",
+    bankLabel: "銀行名稱",
+    cardLabel: "信用卡 / 帳單名稱（選填）",
+    bankPlaceholder: "例如：玉山銀行、台新銀行",
+    cardPlaceholder: "例如：U Bear 卡、FlyGo 卡，可不填",
+    title: "帳單日、截止日與金額",
+    hint: "信用卡需要帳單日、繳費截止日與最低應繳金額。金額通常每期不同，預設為浮動金額。",
+    note: "信用卡帳單會顯示帳單日、繳費截止日、應繳金額與最低應繳金額。"
+  },
+  utilities: {
+    schedule: "due-only",
+    defaultAmountMode: "variable",
+    bankLabel: "繳費單位",
+    cardLabel: "帳單名稱 / 戶號備註（選填）",
+    bankPlaceholder: "例如：台電、自來水、瓦斯公司",
+    cardPlaceholder: "例如：家裡電費、租屋處水費，可不填",
+    title: "截止日與金額",
+    hint: "水電瓦斯通常只需要繳費截止日與本期金額，不需要填信用卡帳單日。",
+    note: "水電費屬於每期金額可能不同的帳單，已繳後建立下期時金額會清空，方便下期重新輸入。"
+  },
+  telecom: {
+    schedule: "due-only",
+    defaultAmountMode: "variable",
+    bankLabel: "電信 / 網路公司",
+    cardLabel: "門號 / 帳單名稱（選填）",
+    bankPlaceholder: "例如：中華電信、遠傳、台灣大哥大",
+    cardPlaceholder: "例如：手機門號、家用網路，可不填",
+    title: "截止日與金額",
+    hint: "電信費通常只需要繳費截止日與本期金額。若每月固定也可以把金額模式改成固定。",
+    note: "電信費預設為浮動金額，也可改為固定金額。"
+  },
+  insurance: {
+    schedule: "due-only",
+    defaultAmountMode: "fixed",
+    bankLabel: "保險公司",
+    cardLabel: "保單 / 項目名稱（選填）",
+    bankPlaceholder: "例如：國泰人壽、富邦產險",
+    cardPlaceholder: "例如：汽車保險、醫療險，可不填",
+    title: "繳費日期與金額",
+    hint: "保險費通常沒有信用卡帳單日，填繳費截止日即可；若金額固定，下期會自動保留。",
+    note: "保險費預設為固定金額，已繳後建立下期會保留金額。"
+  },
+  subscription: {
+    schedule: "monthly",
+    defaultAmountMode: "fixed",
+    bankLabel: "服務名稱",
+    cardLabel: "方案 / 用途（選填）",
+    bankPlaceholder: "例如：Netflix、Spotify、iCloud",
+    cardPlaceholder: "例如：家庭方案、雲端空間，可不填",
+    title: "每月扣款日與金額",
+    hint: "訂閱制只需要每月扣款日與固定金額，不需要填帳單日。",
+    note: "訂閱制會依每月扣款日建立下期，金額預設固定保留。"
+  },
+  rent: {
+    schedule: "monthly",
+    defaultAmountMode: "fixed",
+    bankLabel: "房東 / 租屋名稱",
+    cardLabel: "房租名稱（選填）",
+    bankPlaceholder: "例如：房東王先生、台中租屋處",
+    cardPlaceholder: "例如：每月房租，可不填",
+    title: "每月付款日與金額",
+    hint: "房租屬於每月固定付款，只需要設定每月幾號付款。",
+    note: "房租不需要帳單日，系統會依每月付款日建立下一期，金額預設固定保留。"
+  },
+  management: {
+    schedule: "monthly",
+    defaultAmountMode: "fixed",
+    bankLabel: "社區 / 管委會名稱",
+    cardLabel: "管理費名稱（選填）",
+    bankPlaceholder: "例如：XX 社區管委會",
+    cardPlaceholder: "例如：每月管理費，可不填",
+    title: "每月付款日與金額",
+    hint: "管理費屬於每月固定付款，只需要設定每月幾號付款。",
+    note: "管理費不需要帳單日，系統會依每月付款日建立下一期，金額預設固定保留。"
+  },
+  loan: {
+    schedule: "monthly",
+    defaultAmountMode: "fixed",
+    bankLabel: "銀行 / 貸款單位",
+    cardLabel: "貸款名稱（選填）",
+    bankPlaceholder: "例如：房貸銀行、車貸公司",
+    cardPlaceholder: "例如：房貸、車貸、分期，可不填",
+    title: "每月扣款日與金額",
+    hint: "貸款通常是每月固定扣款，設定每月扣款日即可。若金額會變動，可改成浮動金額。",
+    note: "貸款預設為固定金額，下期會保留金額。"
+  },
+  other: {
+    schedule: "due-only",
+    defaultAmountMode: "variable",
+    bankLabel: "單位 / 公司名稱",
+    cardLabel: "項目名稱（選填）",
+    bankPlaceholder: "例如：繳費單位或公司名稱",
+    cardPlaceholder: "例如：停車費、學費、其他費用，可不填",
+    title: "截止日與金額",
+    hint: "其他費用只需要填繳費截止日與金額；固定金額可自行切換。",
+    note: "其他類型預設為浮動金額。"
+  }
+};
+
+const FIXED_PAYMENT_TYPES = new Set(["rent", "management", "subscription", "loan"]);
 
 const fields = {
   cardId: document.querySelector("#cardId"),
@@ -94,7 +212,9 @@ const fields = {
   statementDate: document.querySelector("#statementDate"),
   dueDate: document.querySelector("#dueDate"),
   amount: document.querySelector("#amount"),
+  amountMode: document.querySelector("#amountMode"),
   minimumAmount: document.querySelector("#minimumAmount"),
+  monthlyPaymentDay: document.querySelector("#monthlyPaymentDay"),
   paymentMethod: document.querySelector("#paymentMethod"),
   billingMode: document.querySelector("#billingMode"),
   paymentAccount: document.querySelector("#paymentAccount"),
@@ -465,8 +585,60 @@ function isEncryptedAccountsPayload(payload) {
 }
 
 function normalizeBillType(type) {
-  const allowed = ["credit-card", "utilities", "telecom", "insurance", "subscription", "rent", "loan", "other"];
+  const allowed = ["credit-card", "utilities", "telecom", "insurance", "subscription", "rent", "management", "loan", "other"];
   return allowed.includes(type) ? type : "credit-card";
+}
+
+function getBillTypeConfig(type) {
+  return BILL_TYPE_CONFIGS[normalizeBillType(type)] || BILL_TYPE_CONFIGS["credit-card"];
+}
+
+function getBillScheduleType(type) {
+  return getBillTypeConfig(type).schedule;
+}
+
+function isMonthlyPaymentType(type) {
+  return getBillScheduleType(type) === "monthly";
+}
+
+function isCreditCardBillType(type) {
+  return getBillScheduleType(type) === "credit-card";
+}
+
+function isFixedPaymentType(type) {
+  return isMonthlyPaymentType(type);
+}
+
+function normalizeAmountMode(mode) {
+  return mode === "fixed" ? "fixed" : "variable";
+}
+
+function getDefaultAmountMode(type) {
+  return getBillTypeConfig(type).defaultAmountMode || "variable";
+}
+
+function shouldCarryAmount(card) {
+  return normalizeAmountMode(card?.amountMode || getDefaultAmountMode(card?.billType)) === "fixed";
+}
+
+function getMonthlyPaymentDay(card) {
+  const value = Number(card?.recurringDay || 0);
+  if (value >= 1 && value <= 31) return value;
+  if (isValidDateString(card?.dueDate || "")) return Number(String(card.dueDate).slice(-2));
+  return 1;
+}
+
+function getNextDueDateFromDay(day, baseDate = new Date()) {
+  const safeDay = Math.min(31, Math.max(1, Number(day || 1)));
+  const today = dateOnly(baseDate);
+  const makeDate = (year, monthIndex) => {
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    const actualDay = Math.min(safeDay, lastDay);
+    return new Date(year, monthIndex, actualDay);
+  };
+  let target = makeDate(today.getFullYear(), today.getMonth());
+  if (target < today) target = makeDate(today.getFullYear(), today.getMonth() + 1);
+  return `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}-${String(target.getDate()).padStart(2, "0")}`;
 }
 
 function getBillTypeText(type) {
@@ -477,6 +649,7 @@ function getBillTypeText(type) {
     insurance: "保險費",
     subscription: "訂閱費",
     rent: "房租",
+    management: "管理費",
     loan: "貸款",
     other: "其他"
   }[normalizeBillType(type)] || "信用卡";
@@ -870,17 +1043,26 @@ function updateAccountVaultUI() {
 function normalizeCard(card) {
   if (!card || typeof card !== "object") return null;
   if (!String(card.bankName || "").trim()) return null;
-  if (!isValidDateString(card.statementDate) || !isValidDateString(card.dueDate)) return null;
+  const billType = normalizeBillType(card.billType);
+  const scheduleType = getBillScheduleType(billType);
+  const monthlyPayment = scheduleType === "monthly";
+  const creditCardBill = scheduleType === "credit-card";
+  if (!isValidDateString(card.dueDate)) return null;
+  if (creditCardBill && !isValidDateString(card.statementDate)) return null;
+  const recurringDay = monthlyPayment ? Math.min(31, Math.max(1, Number(card.recurringDay || String(card.dueDate).slice(-2)))) : 0;
+  const amountMode = normalizeAmountMode(card.amountMode || getDefaultAmountMode(billType));
 
   return {
     id: String(card.id || crypto.randomUUID()),
-    billType: normalizeBillType(card.billType),
+    billType,
     bankName: String(card.bankName).trim(),
     cardName: String(card.cardName || "").trim(),
-    statementDate: card.statementDate,
+    statementDate: creditCardBill ? card.statementDate : "",
     dueDate: card.dueDate,
+    recurringDay,
     amount: Math.max(0, Number(card.amount || 0)),
-    minimumAmount: Math.max(0, Number(card.minimumAmount || 0)),
+    amountMode,
+    minimumAmount: creditCardBill ? Math.max(0, Number(card.minimumAmount || 0)) : 0,
     paymentMethod: card.paymentMethod === "auto" ? "auto" : "manual",
     billingMode: card.billingMode === "manual" ? "manual" : "recurring",
     paymentAccount: String(card.paymentAccount || "").trim(),
@@ -908,12 +1090,15 @@ function normalizeHistoryItem(item) {
     cardName: String(item.cardName || "").trim(),
     statementDate: isValidDateString(item.statementDate) ? item.statementDate : "",
     dueDate: item.dueDate,
+    recurringDay: Math.min(31, Math.max(0, Number(item.recurringDay || 0))),
     amount: Math.max(0, Number(item.amount || 0)),
-    minimumAmount: Math.max(0, Number(item.minimumAmount || 0)),
+    amountMode: normalizeAmountMode(item.amountMode || getDefaultAmountMode(item.billType)),
+    minimumAmount: isCreditCardBillType(item.billType) ? Math.max(0, Number(item.minimumAmount || 0)) : 0,
     paymentMethod: item.paymentMethod === "auto" ? "auto" : "manual",
     billingMode: item.billingMode === "manual" ? "manual" : "recurring",
     paymentAccount: String(item.paymentAccount || "").trim(),
-    paidAt: item.paidAt || new Date().toISOString()
+    paidAt: item.paidAt || new Date().toISOString(),
+    periodDate: isValidDateString(item.periodDate) ? item.periodDate : item.dueDate
   };
 }
 
@@ -1185,6 +1370,7 @@ function addOneMonth(dateString) {
 }
 
 function addPaymentHistory(card, paidAt = new Date().toISOString()) {
+  const periodDate = isValidDateString(card.dueDate) ? card.dueDate : toDateInputValue(new Date());
   history.unshift({
     id: crypto.randomUUID(),
     billType: card.billType || "credit-card",
@@ -1192,7 +1378,10 @@ function addPaymentHistory(card, paidAt = new Date().toISOString()) {
     cardName: card.cardName,
     statementDate: card.statementDate,
     dueDate: card.dueDate,
+    periodDate,
+    recurringDay: card.recurringDay || 0,
     amount: Number(card.amount || 0),
+    amountMode: normalizeAmountMode(card.amountMode || getDefaultAmountMode(card.billType)),
     minimumAmount: Number(card.minimumAmount || 0),
     paymentMethod: card.paymentMethod || "manual",
     billingMode: card.billingMode || "recurring",
@@ -1207,13 +1396,17 @@ function moveToNextBillingCycle(card) {
   const previousAmount = Number(card.amount || 0);
   const previousMinimumAmount = Number(card.minimumAmount || 0);
   const paidAt = new Date().toISOString();
+  const monthlyPayment = isMonthlyPaymentType(card.billType);
+  const creditCardBill = isCreditCardBillType(card.billType);
+  const carryAmount = shouldCarryAmount(card);
 
   addPaymentHistory(card, paidAt);
 
-  card.statementDate = addOneMonth(card.statementDate);
+  card.statementDate = creditCardBill ? addOneMonth(card.statementDate) : "";
   card.dueDate = addOneMonth(card.dueDate);
-  card.amount = 0;
-  card.minimumAmount = 0;
+  card.amount = carryAmount ? previousAmount : 0;
+  card.minimumAmount = creditCardBill ? 0 : 0;
+  if (!monthlyPayment) card.recurringDay = 0;
   card.isPaid = false;
   card.lastPaidAt = paidAt;
   card.lastPaidSummary = {
@@ -1297,6 +1490,137 @@ function renderDueOverviewList(element, list, emptyText) {
   `).join("") + (list.length > 5 ? `<p class="due-overview-more">另有 ${list.length - 5} 筆，請往下查看帳單清單。</p>` : "");
 }
 
+function getCurrentMonthDueCards() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  return cards
+    .filter(card => !card.isPaid && isValidDateString(card.dueDate))
+    .map(card => ({ ...card, diffDays: getDiffDays(card.dueDate), due: new Date(`${card.dueDate}T00:00:00`) }))
+    .filter(card => card.due.getFullYear() === year && card.due.getMonth() === month)
+    .sort((a, b) => a.due - b.due || getDisplayName(a).localeCompare(getDisplayName(b), "zh-Hant"));
+}
+
+function renderMonthDueList() {
+  if (!monthDueList || !monthDueCount) return;
+  const list = getCurrentMonthDueCards();
+  monthDueCount.textContent = list.length;
+  if (list.length === 0) {
+    monthDueList.textContent = "本月沒有待繳項目。";
+    monthDueList.classList.add("empty");
+    return;
+  }
+  monthDueList.classList.remove("empty");
+  monthDueList.innerHTML = list.map(card => `
+    <button type="button" class="month-due-item" data-due-card-id="${escapeHtml(card.id)}">
+      <span class="month-due-date">${escapeHtml(formatDate(card.dueDate).replace(/^\d{4}\//, ""))}</span>
+      <span class="month-due-main">
+        <strong>${escapeHtml(getDisplayName(card))}</strong>
+        <em>${escapeHtml(getBillTypeText(card.billType))}｜${escapeHtml(getPaymentMethodText(card))}${card.paymentAccount ? `｜${escapeHtml(card.paymentAccount)}` : ""}</em>
+      </span>
+      <b>${Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount)}</b>
+    </button>
+  `).join("");
+}
+
+function getBillListAmountHtml(card) {
+  const amount = Number(card.amount || 0);
+  if (amount === 0 && !card.isPaid) {
+    return `
+      <button type="button" class="inline-amount-btn" data-action="quick-amount" data-id="${escapeHtml(card.id)}" aria-label="輸入 ${escapeHtml(getDisplayName(card))} 的繳費金額">
+        待輸入
+      </button>
+    `;
+  }
+  return `<strong>${formatMoney(amount)}</strong>`;
+}
+
+function showQuickAmountDialog(card) {
+  return new Promise(resolve => {
+    const { backdrop, dialog } = createDialogElements();
+    dialog.classList.add("dialog-info", "quick-amount-dialog");
+    dialog.innerHTML = `
+      <div class="app-dialog-icon" aria-hidden="true">$</div>
+      <div class="app-dialog-content">
+        <h3 id="appDialogTitle">輸入繳費金額</h3>
+        <div id="appDialogMessage" class="app-dialog-message quick-amount-content">
+          <p><strong>${escapeHtml(getDisplayName(card))}</strong></p>
+          <p>${escapeHtml(getDueDateLabel(card))}：${escapeHtml(card.dueDate || "未設定")}</p>
+          <label class="quick-amount-field">
+            <span>繳費金額</span>
+            <input type="number" inputmode="numeric" min="1" step="1" id="quickAmountInput" placeholder="例如：10000" autocomplete="off" />
+          </label>
+          <p class="quick-amount-hint">儲存後會直接更新清單，不需要進入編輯頁。</p>
+        </div>
+        <div class="app-dialog-actions">
+          <button type="button" class="secondary-btn" data-dialog-action="cancel">取消</button>
+          <button type="button" class="primary-btn" data-dialog-action="confirm">儲存金額</button>
+        </div>
+      </div>
+    `;
+
+    const input = dialog.querySelector("#quickAmountInput");
+    const confirmButton = dialog.querySelector('[data-dialog-action="confirm"]');
+    const cancelButton = dialog.querySelector('[data-dialog-action="cancel"]');
+    let settled = false;
+    let onKeydown;
+    const finish = value => {
+      if (settled) return;
+      settled = true;
+      if (onKeydown) document.removeEventListener("keydown", onKeydown);
+      closeDialog(backdrop);
+      resolve(value);
+    };
+    const submit = () => {
+      const amount = Math.round(Number(input?.value || 0));
+      if (!Number.isFinite(amount) || amount <= 0) {
+        input?.classList.add("input-error");
+        showAppToast("請輸入大於 0 的金額。", "error");
+        input?.focus();
+        return;
+      }
+      finish(amount);
+    };
+
+    confirmButton?.addEventListener("click", submit);
+    cancelButton?.addEventListener("click", () => finish(null));
+    input?.addEventListener("input", () => input.classList.remove("input-error"));
+    backdrop.addEventListener("click", event => {
+      if (event.target === backdrop) finish(null);
+    });
+    onKeydown = event => {
+      if (event.key === "Escape") finish(null);
+      if (event.key === "Enter") submit();
+    };
+    document.addEventListener("keydown", onKeydown);
+    requestAnimationFrame(() => {
+      backdrop.classList.add("show");
+      input?.focus();
+    });
+  });
+}
+
+async function quickUpdateCardAmount(card) {
+  const amount = await showQuickAmountDialog(card);
+  if (!amount) return;
+  const oldCard = { ...card };
+  card.amount = amount;
+  card.isPaid = false;
+  saveState();
+  render();
+  showAppToast("金額已更新。", "success");
+  if (oldCard.googleCalendarEventId) {
+    try {
+      await handleGoogleSyncAfterEdit(oldCard, card);
+    } catch (error) {
+      await showAppAlert(
+        `金額已儲存，但 Google 日曆同步失敗：${error.message || "請稍後再試。"}`,
+        { type: "danger", title: "Google 日曆同步失敗" }
+      );
+    }
+  }
+}
+
 function renderDueOverview() {
   const todayList = getUpcomingDueCards(0);
   const weekList = getUpcomingDueCards(7).filter(card => card.diffDays > 0);
@@ -1304,6 +1628,7 @@ function renderDueOverview() {
   if (weekDueCount) weekDueCount.textContent = weekList.length;
   renderDueOverviewList(todayDueList, todayList, "今天沒有到期帳單。");
   renderDueOverviewList(weekDueList, weekList, "7 天內沒有即將到期帳單。");
+  renderMonthDueList();
 }
 
 function getPaymentMethodText(card) {
@@ -1311,7 +1636,15 @@ function getPaymentMethodText(card) {
 }
 
 function getBillingModeText(card) {
-  return card.billingMode === "manual" ? "手動" : "循環";
+  return card.billingMode === "manual" ? "手動" : (isMonthlyPaymentType(card.billType) ? "每月固定付款" : "循環");
+}
+
+function getAmountModeText(card) {
+  return shouldCarryAmount(card) ? "固定金額" : "浮動金額";
+}
+
+function getDueDateLabel(card) {
+  return isMonthlyPaymentType(card.billType) ? "本期付款日" : "截止日";
 }
 
 function getGoogleSyncState(card) {
@@ -1447,16 +1780,20 @@ function renderCards() {
       </div>
       <div class="compact-bill-summary">
         <div>
-          <span>截止日</span>
+          <span>${getDueDateLabel(card)}</span>
           <strong>${card.dueDate}</strong>
         </div>
         <div>
           <span>應繳</span>
-          <strong>${Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount)}</strong>
+          ${getBillListAmountHtml(card)}
         </div>
         <div>
           <span>方式</span>
           <strong>${getPaymentMethodText(card)}</strong>
+        </div>
+        <div>
+          <span>金額模式</span>
+          <strong>${getAmountModeText(card)}</strong>
         </div>
       </div>
       ${card.paymentMethod === "auto" ? `<p class="compact-hint">自動扣繳，記得確認扣款。</p>` : ""}
@@ -1477,18 +1814,34 @@ function buildBillDetailRows(card, googleSync) {
   const rows = [
     ["帳單類型", getBillTypeText(card.billType)],
     ["單位 / 銀行 / 公司", card.bankName || "未填"],
-    ["帳單名稱", card.cardName || "未填"],
-    ["帳單日", card.statementDate],
-    ["繳費截止日", card.dueDate],
+    ["帳單名稱", card.cardName || "未填"]
+  ];
+
+  if (isMonthlyPaymentType(card.billType)) {
+    rows.push(["每月付款日", `每月 ${getMonthlyPaymentDay(card)} 號`]);
+    rows.push(["本期付款日", card.dueDate]);
+  } else if (isCreditCardBillType(card.billType)) {
+    rows.push(["帳單日", card.statementDate]);
+    rows.push(["繳費截止日", card.dueDate]);
+  } else {
+    rows.push(["繳費截止日", card.dueDate]);
+  }
+
+  rows.push(
     ["應繳金額", Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount)],
-    ["最低應繳金額", Number(card.minimumAmount || 0) === 0 ? "未設定" : formatMoney(card.minimumAmount)],
+    ["金額模式", getAmountModeText(card)]
+  );
+  if (isCreditCardBillType(card.billType)) {
+    rows.push(["最低應繳金額", Number(card.minimumAmount || 0) === 0 ? "未設定" : formatMoney(card.minimumAmount)]);
+  }
+  rows.push(
     ["繳費方式", getPaymentMethodText(card)],
     ["帳單模式", getBillingModeText(card)],
     ["提前提醒", `提前 ${Number(card.remindDays || 0)} 天`],
     ["繳費帳戶備註", card.paymentAccount || "未填"],
     ["備註", card.note || "未填"],
     ["Google 日曆", googleSync.text]
-  ];
+  );
 
   if (card.lastPaidSummary) {
     rows.push(["上期已繳", `${card.lastPaidSummary.dueDate}，${formatMoney(card.lastPaidSummary.amount)}`]);
@@ -1549,10 +1902,7 @@ function renderHistory() {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
-  const thisMonth = history.filter(item => {
-    const paidDate = new Date(item.paidAt);
-    return paidDate.getFullYear() === currentYear && paidDate.getMonth() === currentMonth;
-  });
+  const thisMonth = history.filter(item => isHistoryInCurrentBillMonth(item, now));
 
   document.querySelector("#monthPaidTotal").textContent = formatMoney(thisMonth.reduce((sum, item) => sum + Number(item.amount || 0), 0));
   document.querySelector("#historyCount").textContent = history.length;
@@ -1575,7 +1925,7 @@ function renderHistory() {
     row.innerHTML = `
       <div>
         <strong>${escapeHtml(getDisplayName(item))}</strong>
-        <span>${getBillTypeText(item.billType)}｜截止日 ${escapeHtml(item.dueDate)}｜${formatPaidDate(item.paidAt)} 已繳</span>
+        <span>${getBillTypeText(item.billType)}｜歸屬 ${escapeHtml(formatDate(getHistoryPeriodDate(item)))}｜${formatPaidDate(item.paidAt)} 已繳</span>
       </div>
       <b>${formatMoney(item.amount)}</b>
     `;
@@ -1908,7 +2258,7 @@ function renderAccounts() {
           <button class="small-btn delete" data-account-action="delete" data-id="${account.id}">刪除</button>
         </div>
         ${account.password ? `<p class="account-password" data-password-row="${account.id}">密碼：••••••••</p>` : ""}
-        ${safeUrl ? `<p class="note"><a href="${escapeHtml(safeUrl)}" target="_blank" rel="noreferrer">開啟繳費網站</a></p>` : ""}
+        ${safeUrl ? `<p class="note"><a href="${escapeHtml(safeUrl)}" target="_blank" rel="noreferrer">開啟網站</a></p>` : ""}
         ${account.note ? `<p class="note">${escapeHtml(account.note)}</p>` : ""}
       </div>
     `;
@@ -1931,6 +2281,17 @@ function formatPaidDate(iso) {
   return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
 }
 
+function getHistoryPeriodDate(item) {
+  return isValidDateString(item?.periodDate) ? item.periodDate : item?.dueDate;
+}
+
+function isHistoryInCurrentBillMonth(item, now = new Date()) {
+  const periodDateString = getHistoryPeriodDate(item);
+  if (!isValidDateString(periodDateString)) return false;
+  const [year, month] = periodDateString.split("-").map(Number);
+  return year === now.getFullYear() && month === now.getMonth() + 1;
+}
+
 function render() {
   renderSummary();
   renderCards();
@@ -1950,15 +2311,57 @@ function escapeHtml(value) {
   }[char]));
 }
 
+function updateBillFormMode({ preserveAmountMode = false } = {}) {
+  const billType = normalizeBillType(fields.billType?.value);
+  const config = getBillTypeConfig(billType);
+  const scheduleType = config.schedule;
+  const monthlyPayment = scheduleType === "monthly";
+  const creditCardBill = scheduleType === "credit-card";
+  const dueOnly = scheduleType === "due-only";
+
+  statementDateField?.classList.toggle("hidden", !creditCardBill);
+  dueDateField?.classList.toggle("hidden", monthlyPayment);
+  monthlyPaymentDayField?.classList.toggle("hidden", !monthlyPayment);
+  minimumAmountField?.classList.toggle("hidden", !creditCardBill);
+  paymentScheduleHint?.classList.remove("hidden");
+
+  if (bankNameLabelText) bankNameLabelText.textContent = config.bankLabel;
+  if (cardNameLabelText) cardNameLabelText.textContent = config.cardLabel;
+  if (fields.bankName) fields.bankName.placeholder = config.bankPlaceholder;
+  if (fields.cardName) fields.cardName.placeholder = config.cardPlaceholder;
+  if (statementDateLabelText) statementDateLabelText.textContent = "帳單日";
+  if (dueDateLabelText) dueDateLabelText.textContent = dueOnly ? "繳費截止日" : "繳費截止日";
+  if (monthlyPaymentDayLabelText) monthlyPaymentDayLabelText.textContent = billType === "subscription" || billType === "loan" ? "每月扣款日" : "每月付款日";
+  if (amountLabelText) amountLabelText.textContent = config.defaultAmountMode === "fixed" ? "固定金額" : "應繳金額";
+
+  if (fields.statementDate) fields.statementDate.required = creditCardBill;
+  if (fields.dueDate) fields.dueDate.required = !monthlyPayment;
+  if (fields.monthlyPaymentDay) fields.monthlyPaymentDay.required = monthlyPayment;
+  if (fields.minimumAmount) fields.minimumAmount.required = false;
+
+  if (dateAmountTitle) dateAmountTitle.textContent = config.title;
+  if (dateAmountHint) dateAmountHint.textContent = config.hint;
+  if (paymentScheduleHint) paymentScheduleHint.textContent = config.note;
+
+  if (fields.amountMode && (!preserveAmountMode || !fields.amountMode.value)) {
+    fields.amountMode.value = config.defaultAmountMode || "variable";
+  }
+  if (monthlyPayment && !fields.monthlyPaymentDay?.value) fields.monthlyPaymentDay.value = "10";
+  if (!creditCardBill && fields.minimumAmount) fields.minimumAmount.value = "";
+}
+
 function resetForm() {
   form.reset();
   fields.cardId.value = "";
   fields.billType.value = "credit-card";
   fields.minimumAmount.value = "";
+  fields.amountMode.value = getDefaultAmountMode(fields.billType.value);
   fields.paymentMethod.value = "manual";
   fields.billingMode.value = "recurring";
   fields.paymentAccount.value = "";
   fields.remindDays.value = 3;
+  fields.monthlyPaymentDay.value = "";
+  updateBillFormMode();
   formTitle.textContent = "新增帳單";
   const formTabButton = document.querySelector('[data-bill-view="form"]');
   if (formTabButton) formTabButton.textContent = "新增帳單";
@@ -2755,9 +3158,17 @@ async function checkDueNotifications({ force = false } = {}) {
     else if (card.diffDays === 0) timing = "今天截止";
     else timing = `剩 ${card.diffDays} 天截止`;
 
+    const notificationParts = [
+      timing,
+      `金額：${Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount)}`,
+      `方式：${getPaymentMethodText(card)}`
+    ];
+    if (card.paymentAccount) notificationParts.push(`帳戶：${card.paymentAccount}`);
+    if (card.note) notificationParts.push(`備註：${card.note}`);
+
     await showPaymentNotification(
       `繳費提醒：${getDisplayName(card)}`,
-      `${timing}｜金額：${Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount)}｜${getPaymentMethodText(card)}`,
+      notificationParts.join("｜"),
       `payment-manager-${card.id}-${card.dueDate}`
     );
     notifiedMap[key] = true;
@@ -2952,15 +3363,23 @@ resetAccountBtn?.addEventListener("click", resetAccountForm);
 form.addEventListener("submit", async event => {
   event.preventDefault();
 
+  const scheduleType = getBillScheduleType(fields.billType.value);
+  const monthlyPayment = scheduleType === "monthly";
+  const creditCardBill = scheduleType === "credit-card";
+  const recurringDay = monthlyPayment ? Number(fields.monthlyPaymentDay.value || 0) : 0;
+  const dueDateValue = monthlyPayment ? getNextDueDateFromDay(recurringDay) : fields.dueDate.value;
+
   const card = normalizeCard({
     id: fields.cardId.value || crypto.randomUUID(),
     billType: fields.billType.value,
     bankName: fields.bankName.value.trim(),
     cardName: fields.cardName.value.trim(),
-    statementDate: fields.statementDate.value,
-    dueDate: fields.dueDate.value,
+    statementDate: creditCardBill ? fields.statementDate.value : "",
+    dueDate: dueDateValue,
+    recurringDay,
     amount: fields.amount.value === "" ? 0 : Number(fields.amount.value),
-    minimumAmount: Number(fields.minimumAmount.value || 0),
+    amountMode: fields.amountMode.value,
+    minimumAmount: creditCardBill ? Number(fields.minimumAmount.value || 0) : 0,
     paymentMethod: fields.paymentMethod.value,
     billingMode: fields.billingMode.value,
     paymentAccount: fields.paymentAccount.value.trim(),
@@ -2970,7 +3389,7 @@ form.addEventListener("submit", async event => {
   });
 
   if (!card) {
-    showAppAlert("請確認銀行名稱、日期與提醒天數都已正確填寫。", { type: "warning", title: "資料未完整" });
+    showAppAlert(monthlyPayment ? "請確認名稱、每月付款日與提醒天數都已正確填寫。" : "請確認名稱、日期與提醒天數都已正確填寫。", { type: "warning", title: "資料未完整" });
     return;
   }
 
@@ -2978,7 +3397,9 @@ form.addEventListener("submit", async event => {
   if (existing) {
     const changedBillDetails = existing.statementDate !== card.statementDate
       || existing.dueDate !== card.dueDate
+      || Number(existing.recurringDay || 0) !== Number(card.recurringDay || 0)
       || Number(existing.amount || 0) !== Number(card.amount || 0)
+      || normalizeAmountMode(existing.amountMode || getDefaultAmountMode(existing.billType)) !== normalizeAmountMode(card.amountMode)
       || Number(existing.minimumAmount || 0) !== Number(card.minimumAmount || 0);
     card.isPaid = existing.isPaid && !changedBillDetails;
     card.lastPaidAt = existing.lastPaidAt;
@@ -3032,6 +3453,11 @@ cardList.addEventListener("click", async event => {
   const action = button.dataset.action;
   const card = cards.find(item => item.id === id);
   if (!card) return;
+
+  if (action === "quick-amount") {
+    await quickUpdateCardAmount(card);
+    return;
+  }
 
   if (action === "detail") {
     showBillDetail(card);
@@ -3097,15 +3523,18 @@ cardList.addEventListener("click", async event => {
     fields.billType.value = card.billType || "credit-card";
     fields.bankName.value = card.bankName;
     fields.cardName.value = card.cardName;
-    fields.statementDate.value = card.statementDate;
+    fields.statementDate.value = card.statementDate || "";
     fields.dueDate.value = card.dueDate;
+    fields.monthlyPaymentDay.value = isMonthlyPaymentType(card.billType) ? String(getMonthlyPaymentDay(card)) : "";
     fields.amount.value = Number(card.amount || 0) === 0 ? "" : card.amount;
-    fields.minimumAmount.value = card.minimumAmount || "";
+    fields.amountMode.value = normalizeAmountMode(card.amountMode || getDefaultAmountMode(card.billType));
+    fields.minimumAmount.value = isCreditCardBillType(card.billType) ? (card.minimumAmount || "") : "";
     fields.paymentMethod.value = card.paymentMethod || "manual";
     fields.billingMode.value = card.billingMode || "recurring";
     fields.paymentAccount.value = card.paymentAccount || "";
     fields.remindDays.value = card.remindDays ?? 3;
     fields.note.value = card.note || "";
+    updateBillFormMode({ preserveAmountMode: true });
     formTitle.textContent = "編輯帳單";
     const formTabButton = document.querySelector('[data-bill-view="form"]');
     if (formTabButton) formTabButton.textContent = "編輯帳單";
@@ -3129,6 +3558,7 @@ billSubtabButtons.forEach(button => {
 
 filterSelect.addEventListener("change", renderCards);
 typeFilterSelect?.addEventListener("change", renderCards);
+fields.billType?.addEventListener("change", () => updateBillFormMode());
 searchInput.addEventListener("input", renderCards);
 resetBtn.addEventListener("click", resetForm);
 exportBtn.addEventListener("click", exportData);
@@ -3144,7 +3574,7 @@ importFile.addEventListener("change", event => {
 });
 
 notifyBtn?.addEventListener("click", requestNotificationPermission);
-testNotifyBtn?.addEventListener("click", () => showPaymentNotification("測試通知", "如果你看到這則通知，代表繳費管理通知可正常顯示。", "payment-manager-test"));
+testNotifyBtn?.addEventListener("click", () => showPaymentNotification("測試通知", "房租今天截止｜金額：$10,000｜方式：手動繳費｜帳戶：中信活存｜備註：匯款給房東", "payment-manager-test"));
 
 toggleHistoryBtn?.addEventListener("click", () => {
   isHistoryExpanded = !isHistoryExpanded;
@@ -3188,6 +3618,7 @@ if ("serviceWorker" in navigator) {
 
   updateNotificationButtons();
   updateAccountVaultUI();
+  updateBillFormMode();
   setInterval(() => checkDueNotifications(), 60 * 60 * 1000);
   render();
 }

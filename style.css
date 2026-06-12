@@ -198,6 +198,18 @@ input:focus, textarea:focus, select:focus {
   display: none !important;
 }
 
+.field-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #eef6ff;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
 .empty-state {
   border: 1px dashed var(--line);
   border-radius: 20px;
@@ -2336,6 +2348,78 @@ body {
   white-space: nowrap;
 }
 
+.inline-amount-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 1px dashed #93c5fd;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.inline-amount-btn:hover,
+.inline-amount-btn:focus-visible {
+  border-color: #3b82f6;
+  background: #dbeafe;
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.quick-amount-content {
+  gap: 10px;
+}
+
+.quick-amount-field {
+  display: grid;
+  gap: 7px;
+  margin-top: 4px;
+}
+
+.quick-amount-field span {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.quick-amount-field input {
+  width: 100%;
+  height: 48px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.quick-amount-field input:focus {
+  border-color: var(--primary);
+  outline: 3px solid var(--primary-soft);
+}
+
+.quick-amount-field input.input-error {
+  border-color: var(--danger);
+  outline: 3px solid var(--danger-soft);
+}
+
+.quick-amount-hint {
+  padding: 9px 11px;
+  border-radius: 14px;
+  background: #f1f5f9;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .compact-hint {
   margin: 0 0 10px;
   color: var(--muted);
@@ -2428,5 +2512,135 @@ body {
   .bill-detail-row {
     grid-template-columns: 1fr;
     gap: 4px;
+  }
+}
+
+/* v31 Smart payment types + monthly due list */
+.month-due-card {
+  border: 1px solid rgba(216, 225, 234, 0.95);
+  border-radius: 22px;
+  padding: 16px;
+  margin: -4px 0 16px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow);
+}
+
+.month-due-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.month-due-head span {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.month-due-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.month-due-head strong {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef6ff;
+  color: var(--primary);
+  font-size: 24px;
+}
+
+.month-due-list {
+  display: grid;
+  gap: 8px;
+}
+
+.month-due-list.empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.month-due-item {
+  width: 100%;
+  border: 1px solid rgba(216, 225, 234, 0.92);
+  border-radius: 16px;
+  background: #f8fbff;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+}
+
+.month-due-item:hover {
+  border-color: rgba(63, 111, 159, 0.38);
+  background: #fff;
+}
+
+.month-due-date {
+  color: var(--primary);
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.month-due-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.month-due-main strong {
+  color: var(--text);
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.month-due-main em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.month-due-item b {
+  color: var(--text);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.compact-bill-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 760px) {
+  .month-due-item {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .month-due-item b {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 520px) {
+  .compact-bill-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .compact-bill-summary > div:first-child {
+    grid-column: span 2;
   }
 }
