@@ -1,4 +1,4 @@
-const CACHE_NAME = 'payment-manager-v34-rent-utilities-total';
+const CACHE_NAME = 'payment-manager-v34-rent-utilities-total-rentquickfix';
 const ASSETS = [
   "./",
   "./index.html",

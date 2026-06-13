@@ -1105,7 +1105,7 @@ function normalizeCard(card) {
     bankName: String(card.bankName).trim(),
     cardName: String(card.cardName || "").trim(),
     statementDate: creditCardBill ? card.statementDate : "",
-    dueDate: card.dueDate,
+    dueDate: creditCardBill ? moveWeekendToNextBusinessDay(card.dueDate) : card.dueDate,
     recurringDay,
     amount: normalizedAmount,
     rentBaseAmount: billType === "rent" ? rentAmounts.base : 0,
@@ -1163,6 +1163,18 @@ function getBackupFileName() {
   return `payment-manager-backup-${yyyy}${mm}${dd}.json`;
 }
 
+function scrollToBillView(targetView) {
+  const targetPanel = targetView === "form"
+    ? document.querySelector('#tab-bills [data-bill-view-panel="form"]')
+    : document.querySelector('#tab-bills [data-bill-view-panel="list"]');
+
+  if (!targetPanel) return;
+
+  const stickyOffset = window.matchMedia("(max-width: 640px)").matches ? 88 : 18;
+  const top = targetPanel.getBoundingClientRect().top + window.scrollY - stickyOffset;
+  window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
+}
+
 function switchBillView(viewName, options = {}) {
   const targetView = viewName === "form" ? "form" : "list";
 
@@ -1177,9 +1189,7 @@ function switchBillView(viewName, options = {}) {
   });
 
   if (options.scroll !== false) {
-    const billsPanel = document.querySelector("#tab-bills");
-    const top = billsPanel ? billsPanel.offsetTop - 8 : 0;
-    window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
+    requestAnimationFrame(() => scrollToBillView(targetView));
   }
 }
 
@@ -1404,6 +1414,29 @@ function dateOnly(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+function toDateInputValue(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function parseDateInput(value) {
+  if (!isValidDateString(value)) return null;
+  const [year, month, day] = String(value).split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function moveWeekendToNextBusinessDay(dateString) {
+  const date = parseDateInput(dateString);
+  if (!date) return dateString;
+  const day = date.getDay();
+  if (day === 6) date.setDate(date.getDate() + 2);
+  if (day === 0) date.setDate(date.getDate() + 1);
+  return toDateInputValue(date);
+}
+
+function normalizeCreditCardDueDate(card) {
+  return isCreditCardBillType(card?.billType) ? moveWeekendToNextBusinessDay(card.dueDate) : card.dueDate;
+}
+
 function getDiffDays(dueDateString) {
   const today = dateOnly(new Date());
   const dueDate = dateOnly(new Date(dueDateString));
@@ -1462,7 +1495,7 @@ function moveToNextBillingCycle(card) {
   addPaymentHistory(card, paidAt);
 
   card.statementDate = creditCardBill ? addOneMonth(card.statementDate) : "";
-  card.dueDate = addOneMonth(card.dueDate);
+  card.dueDate = creditCardBill ? moveWeekendToNextBusinessDay(addOneMonth(card.dueDate)) : addOneMonth(card.dueDate);
   if (normalizeBillType(card.billType) === "rent") {
     card.rentBaseAmount = previousRentBaseAmount || previousAmount;
     card.rentWaterAmount = 0;
@@ -1598,8 +1631,34 @@ function renderMonthDueList() {
   `).join("");
 }
 
+function getRentPartLabel(part) {
+  if (part === "base") return "固定房租";
+  if (part === "water") return "水費";
+  if (part === "electric") return "電費";
+  return "金額";
+}
+
+function getRentPartAmount(card, part) {
+  const amounts = getRentExtraAmounts(card);
+  if (part === "base") return amounts.base;
+  if (part === "water") return amounts.water;
+  if (part === "electric") return amounts.electric;
+  return amounts.total;
+}
+
 function getBillListAmountHtml(card) {
   const amount = Number(card.amount || 0);
+  if (normalizeBillType(card.billType) === "rent") {
+    const { base, water, electric } = getRentExtraAmounts(card);
+    return `
+      <strong>${amount === 0 && !card.isPaid ? "待輸入" : formatMoney(amount)}</strong>
+      <div class="rent-quick-breakdown" aria-label="房租明細快速編輯">
+        ${getRentQuickEditButton(card, "base", base)}
+        ${getRentQuickEditButton(card, "water", water)}
+        ${getRentQuickEditButton(card, "electric", electric)}
+      </div>
+    `;
+  }
   if (amount === 0 && !card.isPaid) {
     return `
       <button type="button" class="inline-amount-btn" data-action="quick-amount" data-id="${escapeHtml(card.id)}" aria-label="輸入 ${escapeHtml(getDisplayName(card))} 的繳費金額">
@@ -1607,30 +1666,39 @@ function getBillListAmountHtml(card) {
       </button>
     `;
   }
-  if (normalizeBillType(card.billType) === "rent") {
-    const { water, electric } = getRentExtraAmounts(card);
-    const hint = water > 0 || electric > 0 ? `<small class="bill-amount-breakdown">${escapeHtml(getRentBreakdownText(card))}</small>` : "";
-    return `<strong>${formatMoney(amount)}</strong>${hint}`;
-  }
   return `<strong>${formatMoney(amount)}</strong>`;
 }
 
-function showQuickAmountDialog(card) {
+function getRentQuickEditButton(card, part, amount) {
+  const label = getRentPartLabel(part);
+  const text = Number(amount || 0) > 0 ? `${label} ${formatMoney(amount)}` : `${label} 待輸入`;
+  return `
+    <button type="button" class="rent-quick-btn ${Number(amount || 0) > 0 ? "" : "empty"}" data-action="quick-rent-amount" data-rent-part="${escapeHtml(part)}" data-id="${escapeHtml(card.id)}" aria-label="快速編輯 ${escapeHtml(getDisplayName(card))} 的${escapeHtml(label)}">
+      ${escapeHtml(text)}
+    </button>
+  `;
+}
+
+function showQuickAmountDialog(card, options = {}) {
   return new Promise(resolve => {
+    const label = options.label || "繳費金額";
+    const currentAmount = Number(options.currentAmount || 0);
+    const min = Number(options.min ?? 1);
+    const allowZero = min <= 0;
     const { backdrop, dialog } = createDialogElements();
     dialog.classList.add("dialog-info", "quick-amount-dialog");
     dialog.innerHTML = `
       <div class="app-dialog-icon" aria-hidden="true">$</div>
       <div class="app-dialog-content">
-        <h3 id="appDialogTitle">輸入繳費金額</h3>
+        <h3 id="appDialogTitle">輸入${escapeHtml(label)}</h3>
         <div id="appDialogMessage" class="app-dialog-message quick-amount-content">
           <p><strong>${escapeHtml(getDisplayName(card))}</strong></p>
           <p>${escapeHtml(getDueDateLabel(card))}：${escapeHtml(card.dueDate || "未設定")}</p>
           <label class="quick-amount-field">
-            <span>繳費金額</span>
-            <input type="number" inputmode="numeric" min="1" step="1" id="quickAmountInput" placeholder="例如：10000" autocomplete="off" />
+            <span>${escapeHtml(label)}</span>
+            <input type="number" inputmode="numeric" min="${allowZero ? 0 : 1}" step="1" id="quickAmountInput" placeholder="例如：10000" value="${currentAmount > 0 ? currentAmount : ""}" autocomplete="off" />
           </label>
-          <p class="quick-amount-hint">儲存後會直接更新清單，不需要進入編輯頁。</p>
+          <p class="quick-amount-hint">儲存後會直接更新清單，不需要進入編輯頁。${allowZero ? "若本期沒有水費或電費，可輸入 0 清空。" : ""}</p>
         </div>
         <div class="app-dialog-actions">
           <button type="button" class="secondary-btn" data-dialog-action="cancel">取消</button>
@@ -1653,9 +1721,9 @@ function showQuickAmountDialog(card) {
     };
     const submit = () => {
       const amount = Math.round(Number(input?.value || 0));
-      if (!Number.isFinite(amount) || amount <= 0) {
+      if (!Number.isFinite(amount) || amount < min) {
         input?.classList.add("input-error");
-        showAppToast("請輸入大於 0 的金額。", "error");
+        showAppToast(allowZero ? "請輸入 0 以上的金額。" : "請輸入大於 0 的金額。", "error");
         input?.focus();
         return;
       }
@@ -1676,6 +1744,7 @@ function showQuickAmountDialog(card) {
     requestAnimationFrame(() => {
       backdrop.classList.add("show");
       input?.focus();
+      input?.select();
     });
   });
 }
@@ -1684,11 +1753,50 @@ async function quickUpdateCardAmount(card) {
   const amount = await showQuickAmountDialog(card);
   if (!amount) return;
   const oldCard = { ...card };
-  card.amount = amount;
+  if (normalizeBillType(card.billType) === "rent") {
+    card.rentBaseAmount = amount;
+    const rentAmounts = getRentExtraAmounts(card);
+    card.amount = rentAmounts.total;
+  } else {
+    card.amount = amount;
+  }
   card.isPaid = false;
   saveState();
   render();
   showAppToast("金額已更新。", "success");
+  if (oldCard.googleCalendarEventId) {
+    try {
+      await handleGoogleSyncAfterEdit(oldCard, card);
+    } catch (error) {
+      await showAppAlert(
+        `金額已儲存，但 Google 日曆同步失敗：${error.message || "請稍後再試。"}`,
+        { type: "danger", title: "Google 日曆同步失敗" }
+      );
+    }
+  }
+}
+
+async function quickUpdateRentPart(card, part) {
+  if (normalizeBillType(card.billType) !== "rent") return;
+  const safePart = ["base", "water", "electric"].includes(part) ? part : "base";
+  const label = getRentPartLabel(safePart);
+  const currentAmount = getRentPartAmount(card, safePart);
+  const amount = await showQuickAmountDialog(card, {
+    label,
+    currentAmount,
+    min: safePart === "base" ? 1 : 0
+  });
+  if (amount === null) return;
+  const oldCard = { ...card };
+  if (safePart === "base") card.rentBaseAmount = amount;
+  if (safePart === "water") card.rentWaterAmount = amount;
+  if (safePart === "electric") card.rentElectricAmount = amount;
+  const rentAmounts = getRentExtraAmounts(card);
+  card.amount = rentAmounts.total;
+  card.isPaid = false;
+  saveState();
+  render();
+  showAppToast(`${label}已更新，本期房租合計 ${formatMoney(card.amount)}。`, "success");
   if (oldCard.googleCalendarEventId) {
     try {
       await handleGoogleSyncAfterEdit(oldCard, card);
@@ -3556,6 +3664,10 @@ cardList.addEventListener("click", async event => {
 
   if (action === "quick-amount") {
     await quickUpdateCardAmount(card);
+    return;
+  }
+  if (action === "quick-rent-amount") {
+    await quickUpdateRentPart(card, event.target.closest("button")?.dataset.rentPart || "base");
     return;
   }
 

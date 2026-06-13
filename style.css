@@ -1501,6 +1501,41 @@ body {
   font-weight: 600;
 }
 
+.rent-quick-breakdown {
+  display: grid;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.rent-quick-btn {
+  width: 100%;
+  padding: 5px 7px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.rent-quick-btn.empty {
+  border-style: dashed;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.rent-quick-btn:hover,
+.rent-quick-btn:focus-visible {
+  border-color: #3b82f6;
+  background: #dbeafe;
+  transform: translateY(-1px);
+  outline: none;
+}
+
 .note-section textarea {
   min-height: 96px;
 }
@@ -2714,5 +2749,35 @@ body {
 @media (max-width: 760px) {
   .rent-extra-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* v34 mobile fix: 帳號資料列表在手機不使用內層捲動，避免列表到底後頁面出現過長/橡皮筋式空白捲動 */
+@media (max-width: 760px) {
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+
+  #tab-accounts.active,
+  #tab-accounts .account-panel,
+  #tab-accounts .account-workspace,
+  #accountListPanel {
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  #accountList {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+    -webkit-overflow-scrolling: auto;
+  }
+
+  #accountList .account-card:last-child {
+    margin-bottom: 0 !important;
   }
 }
