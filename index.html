@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">Payment Reminder</p>
         <h1>繳費管理</h1>
-        <p class="subtitle">用分頁管理帳單、帳號密碼、繳費紀錄與備份設定，支援信用卡、水電費、電信費、保險費等帳單。<br><span class="hero-version">目前版本 v41｜v41：手機快捷列改為固定在上方；帳單區塊顯示「帳單清單｜新增帳單」，帳號區塊顯示「新增帳號｜帳號資料」。</span></p>
+        <p class="subtitle">用分頁管理帳單、帳號密碼、繳費紀錄與備份設定，支援信用卡、水電費、電信費、保險費等帳單。<br><span class="hero-version">目前版本 v42｜v42：新增帳單分類顏色、手機快捷列目前狀態、儲存後自動回清單與帳單表單分段收合。</span></p>
       </div>
     </header>
 
@@ -141,14 +141,15 @@
             <form id="cardForm" class="bill-form">
               <input type="hidden" id="cardId" />
 
-              <div class="bill-form-section">
-                <div class="form-section-head">
+              <details class="bill-form-section bill-form-details" open>
+                <summary class="form-section-head">
                   <span class="section-step">01</span>
                   <div>
                     <h3>基本資料</h3>
                     <p>先填帳單來源與名稱，之後清單比較好辨識。</p>
                   </div>
-                </div>
+                  <span class="section-toggle" aria-hidden="true"></span>
+                </summary>
                 <div class="bill-form-fields basic-fields">
                   <label>
                     帳單類型
@@ -173,16 +174,17 @@
                     <input id="cardName" type="text" placeholder="例如：U Bear 卡、家裡電費、手機門號，可不填" />
                   </label>
                 </div>
-              </div>
+              </details>
 
-              <div class="bill-form-section">
-                <div class="form-section-head">
+              <details class="bill-form-section bill-form-details">
+                <summary class="form-section-head">
                   <span class="section-step">02</span>
                   <div>
                     <h3 id="dateAmountTitle">日期與金額</h3>
                     <p id="dateAmountHint">截止日與金額會用來計算提醒、逾期與本期未繳合計。</p>
                   </div>
-                </div>
+                  <span class="section-toggle" aria-hidden="true"></span>
+                </summary>
                 <div class="bill-form-fields four-fields">
                   <label id="statementDateField">
                     <span id="statementDateLabelText">帳單日</span>
@@ -233,16 +235,17 @@
                   </label>
                   <p id="paymentScheduleHint" class="field-note hidden">此類型會依設定自動調整欄位。</p>
                 </div>
-              </div>
+              </details>
 
-              <div class="bill-form-section">
-                <div class="form-section-head">
+              <details class="bill-form-section bill-form-details">
+                <summary class="form-section-head">
                   <span class="section-step">03</span>
                   <div>
                     <h3>繳費與提醒</h3>
                     <p>設定繳費方式、循環模式與提前提醒天數。</p>
                   </div>
-                </div>
+                  <span class="section-toggle" aria-hidden="true"></span>
+                </summary>
                 <div class="bill-form-fields payment-fields">
                   <label>
                     繳費方式
@@ -282,22 +285,23 @@
                     <input id="paymentAccount" type="text" placeholder="例如：中信活存、玉山帳戶，或記得先補錢" />
                   </label>
                 </div>
-              </div>
+              </details>
 
-              <div class="bill-form-section note-section">
-                <div class="form-section-head">
+              <details class="bill-form-section bill-form-details note-section">
+                <summary class="form-section-head">
                   <span class="section-step">04</span>
                   <div>
                     <h3>備註</h3>
                     <p>可記錄自動扣繳、補錢、特殊繳費方式等提醒。</p>
                   </div>
-                </div>
+                  <span class="section-toggle" aria-hidden="true"></span>
+                </summary>
                 <label>
                   備註
                   <textarea id="note" rows="3" placeholder="例如：確認是否自動扣繳"></textarea>
                 </label>
                 <p class="helper-text">自動扣繳也建議保留提醒，用來確認扣款是否成功。帳單模式選「循環」時，已繳後會建立下期；選「手動」時，只會留下繳費紀錄，不會自動產生下一期。</p>
-              </div>
+              </details>
 
               <div class="bill-form-actions">
                 <button class="primary-btn" type="submit">儲存帳單</button>

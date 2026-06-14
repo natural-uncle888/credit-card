@@ -3284,3 +3284,143 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* v42 bill category colors + collapsible bill form sections */
+.bill-type-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+
+.type-credit-card { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.type-utilities { background: #ecfdf5; color: #047857; border-color: #bbf7d0; }
+.type-telecom { background: #eef2ff; color: #4f46e5; border-color: #c7d2fe; }
+.type-insurance { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+.type-subscription { background: #fdf2f8; color: #be185d; border-color: #fbcfe8; }
+.type-rent { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.type-management { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
+.type-loan { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.type-other { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+
+.bill-bank-text {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.bill-card-compact {
+  border-left: 6px solid rgba(148, 163, 184, 0.45);
+}
+
+.bill-card-compact.bill-type-credit-card { border-left-color: #60a5fa; }
+.bill-card-compact.bill-type-utilities { border-left-color: #34d399; }
+.bill-card-compact.bill-type-telecom { border-left-color: #818cf8; }
+.bill-card-compact.bill-type-insurance { border-left-color: #a78bfa; }
+.bill-card-compact.bill-type-subscription { border-left-color: #f472b6; }
+.bill-card-compact.bill-type-rent { border-left-color: #fb923c; }
+.bill-card-compact.bill-type-management { border-left-color: #2dd4bf; }
+.bill-card-compact.bill-type-loan { border-left-color: #f87171; }
+.bill-card-compact.bill-type-other { border-left-color: #94a3b8; }
+
+.bill-form-details {
+  padding: 0;
+  overflow: hidden;
+}
+
+.bill-form-details > summary.form-section-head {
+  margin: 0;
+  padding: 16px;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.bill-form-details > summary.form-section-head::-webkit-details-marker {
+  display: none;
+}
+
+.bill-form-details > .bill-form-fields,
+.bill-form-details > label,
+.bill-form-details > .helper-text {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+.bill-form-details > .bill-form-fields {
+  padding-bottom: 16px;
+}
+
+.bill-form-details > label {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 10px;
+}
+
+.bill-form-details > .helper-text {
+  margin-bottom: 16px;
+}
+
+.section-toggle {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(63, 111, 159, 0.11);
+  position: relative;
+}
+
+.section-toggle::before,
+.section-toggle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--primary-deep);
+  transform: translate(-50%, -50%);
+  transition: transform 0.18s ease;
+}
+
+.section-toggle::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.bill-form-details[open] .section-toggle::after {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+@media (max-width: 640px) {
+  .mobile-quick-btn.active {
+    position: relative;
+    padding-top: 15px;
+    box-shadow: 0 8px 18px rgba(63, 111, 159, 0.22);
+  }
+
+  .mobile-quick-btn.active::before {
+    content: "目前";
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    line-height: 1;
+    opacity: 0.9;
+  }
+
+  .bill-form-details > summary.form-section-head {
+    align-items: center;
+  }
+
+  .bill-form-details:not([open]) > summary.form-section-head {
+    padding-bottom: 16px;
+  }
+}

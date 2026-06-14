@@ -1273,9 +1273,12 @@ function updateMobileQuickNavActive(section, viewName) {
     const belongsToAccounts = action.startsWith("account-");
     const visible = (isBillSection && belongsToBills) || (isAccountSection && belongsToAccounts);
 
+    const isActive = visible && action === key;
     button.classList.toggle("hidden", !visible);
     button.hidden = !visible;
-    button.classList.toggle("active", visible && action === key);
+    button.classList.toggle("active", isActive);
+    if (isActive) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
   });
 }
 
@@ -1309,6 +1312,19 @@ function switchBillView(viewName, options = {}) {
   if (options.scroll !== false) {
     requestAnimationFrame(() => scrollToBillView(targetView));
   }
+}
+
+function setBillFormSectionsOpen(mode = "basic") {
+  const sections = document.querySelectorAll("#cardForm .bill-form-details");
+  sections.forEach((section, index) => {
+    if (mode === "all") section.open = true;
+    else section.open = index === 0;
+  });
+}
+
+function openInvalidBillFormSection(event) {
+  const section = event.target?.closest?.(".bill-form-details");
+  if (section) section.open = true;
 }
 
 function scrollToAccountView(targetView) {
@@ -2448,7 +2464,8 @@ function renderCards() {
     const googleSync = getGoogleSyncState(card);
     const article = document.createElement("article");
     const dueTone = getDueTone(card);
-    article.className = `bill-card bill-card-compact ${card.isPaid ? "paid" : ""} due-${dueTone}`;
+    const normalizedType = normalizeBillType(card.billType);
+    article.className = `bill-card bill-card-compact bill-type-${normalizedType} ${card.isPaid ? "paid" : ""} due-${dueTone}`;
     article.dataset.cardId = card.id;
     article.innerHTML = `
       <div class="bill-top compact-top">
@@ -2458,7 +2475,7 @@ function renderCards() {
         </label>
         <div class="bill-title-wrap">
           <h3 class="bill-name">${escapeHtml(getDisplayName(card))}</h3>
-          <div class="bill-bank compact-subline">${getBillTypeText(card.billType)}${card.cardName ? `｜${escapeHtml(card.bankName)}` : ""}</div>
+          <div class="bill-bank compact-subline"><span class="bill-type-pill type-${normalizedType}">${getBillTypeText(card.billType)}</span>${card.cardName ? `<span class="bill-bank-text">｜${escapeHtml(card.bankName)}</span>` : ""}</div>
         </div>
         <span class="badge ${status.type}">${status.text}</span>
       </div>
@@ -3141,6 +3158,7 @@ function resetForm() {
   const formTabButton = document.querySelector('[data-bill-view="form"]');
   if (formTabButton) formTabButton.textContent = "新增帳單";
   resetBtn.classList.add("hidden");
+  setBillFormSectionsOpen("basic");
 }
 
 
@@ -4154,6 +4172,8 @@ deleteSelectedAccountsBtn?.addEventListener("click", deleteSelectedAccounts);
 
 resetAccountBtn?.addEventListener("click", resetAccountForm);
 
+form?.addEventListener("invalid", openInvalidBillFormSection, true);
+
 form.addEventListener("submit", async event => {
   event.preventDefault();
 
@@ -4225,6 +4245,7 @@ form.addEventListener("submit", async event => {
   resetForm();
   render();
   switchBillView("list");
+  showAppToast(existing ? "帳單已更新，已切回帳單清單。" : "帳單已新增，已切回帳單清單。", "success");
 
   if (existing?.googleCalendarEventId) {
     try {
@@ -4393,6 +4414,7 @@ cardList.addEventListener("click", async event => {
     const formTabButton = document.querySelector('[data-bill-view="form"]');
     if (formTabButton) formTabButton.textContent = "編輯帳單";
     resetBtn.classList.remove("hidden");
+    setBillFormSectionsOpen("all");
     switchTab("bills", { scroll: false });
     switchBillView("form");
     return;
