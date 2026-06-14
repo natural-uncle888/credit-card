@@ -17,5 +17,5 @@
       "type": "image/png"
     }
   ],
-  "description": "繳費管理 v38，修正手機瀏覽滑動卡住問題，保留 Dashboard 圖表與帳單批次操作"
+  "description": "繳費管理 v40，手機底部快捷列改為依目前分頁顯示"
 }

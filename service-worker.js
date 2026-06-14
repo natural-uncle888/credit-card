@@ -1,4 +1,4 @@
-const CACHE_NAME = 'payment-manager-v38-mobile-scroll-fix';
+const CACHE_NAME = 'payment-manager-v40-context-bottom-nav';
 const ASSETS = [
   "./",
   "./index.html",

@@ -72,6 +72,8 @@ const tabButtons = document.querySelectorAll(".tab-btn");
 const tabPanels = document.querySelectorAll("[data-tab-panel]");
 const billSubtabButtons = document.querySelectorAll("[data-bill-view]");
 const billSubtabPanels = document.querySelectorAll("[data-bill-view-panel]");
+const mobileQuickNav = document.querySelector(".mobile-quick-nav");
+const mobileQuickButtons = document.querySelectorAll("[data-mobile-quick]");
 const statementDateField = document.querySelector("#statementDateField");
 const dueDateField = document.querySelector("#dueDateField");
 const monthlyPaymentDayField = document.querySelector("#monthlyPaymentDayField");
@@ -102,8 +104,6 @@ const dashboardElements = {
   overdueCount: document.querySelector("#dashboardOverdueCount"),
   overdueAmount: document.querySelector("#dashboardOverdueAmount"),
   monthExpected: document.querySelector("#dashboardMonthExpected"),
-  cashFlowChart: document.querySelector("#dashboardCashFlowChart"),
-  cashFlowTotal: document.querySelector("#dashboardCashFlowTotal"),
   monthCompareChart: document.querySelector("#dashboardMonthCompareChart"),
   monthCompareDiff: document.querySelector("#dashboardMonthCompareDiff"),
   monthCompareText: document.querySelector("#dashboardMonthCompareText")
@@ -1248,6 +1248,27 @@ function getBackupFileName() {
   return `payment-manager-backup-${yyyy}${mm}${dd}.json`;
 }
 
+function updateMobileQuickNavActive(section, viewName) {
+  if (!mobileQuickButtons.length) return;
+
+  const normalizedSection = section === "accounts" ? "accounts" : section === "bills" ? "bills" : "hidden";
+
+  if (mobileQuickNav) {
+    mobileQuickNav.dataset.activeSection = normalizedSection;
+    mobileQuickNav.classList.toggle("hidden", normalizedSection === "hidden");
+  }
+
+  const key = normalizedSection === "accounts"
+    ? (viewName === "list" ? "account-list" : "account-form")
+    : (viewName === "form" ? "bill-form" : "bill-list");
+
+  mobileQuickButtons.forEach(button => {
+    const visible = button.dataset.mobileQuickSection === normalizedSection;
+    button.hidden = !visible;
+    button.classList.toggle("active", visible && button.dataset.mobileQuick === key);
+  });
+}
+
 function scrollToBillView(targetView) {
   const targetPanel = targetView === "form"
     ? document.querySelector('#tab-bills [data-bill-view-panel="form"]')
@@ -1272,6 +1293,8 @@ function switchBillView(viewName, options = {}) {
   billSubtabPanels.forEach(panel => {
     panel.classList.toggle("active", panel.dataset.billViewPanel === targetView);
   });
+
+  updateMobileQuickNavActive("bills", targetView);
 
   if (options.scroll !== false) {
     requestAnimationFrame(() => scrollToBillView(targetView));
@@ -1303,6 +1326,8 @@ function switchAccountView(viewName, options = {}) {
     panel.classList.toggle("active", panel.dataset.accountViewPanel === targetView);
   });
 
+  updateMobileQuickNavActive("accounts", targetView);
+
   // 手機瀏覽時不要自動 focus 搜尋欄，避免鍵盤跳出與畫面被推走。
   if (document.activeElement instanceof HTMLElement && document.activeElement.closest("#tab-accounts")) {
     document.activeElement.blur();
@@ -1326,6 +1351,13 @@ function switchTab(tabName, options = {}) {
 
   if (tabName === "accounts") {
     updateAccountVaultUI();
+    const activeAccountButton = document.querySelector(".account-subtab-btn.active");
+    updateMobileQuickNavActive("accounts", activeAccountButton?.dataset.accountView || "form");
+  } else if (tabName === "bills") {
+    const activeBillButton = document.querySelector(".bill-subtab-btn.active");
+    updateMobileQuickNavActive("bills", activeBillButton?.dataset.billView || "list");
+  } else {
+    updateMobileQuickNavActive("hidden");
   }
 
   if (options.scroll !== false) {
@@ -2175,7 +2207,6 @@ function renderDashboardMonthCompare(currentTotal) {
 function renderDashboardAnalytics(currentTotal = null) {
   const items = getCurrentMonthEstimatedItems();
   const total = currentTotal ?? items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  renderDashboardCashFlow(items);
   renderDashboardMonthCompare(total);
 }
 
@@ -4339,6 +4370,31 @@ cardList.addEventListener("click", async event => {
 
   saveState();
   render();
+});
+
+mobileQuickButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    const action = button.dataset.mobileQuick;
+    if (action === "bill-list") {
+      switchTab("bills", { scroll: false });
+      switchBillView("list");
+      return;
+    }
+    if (action === "bill-form") {
+      switchTab("bills", { scroll: false });
+      switchBillView("form");
+      return;
+    }
+    if (action === "account-form") {
+      switchTab("accounts", { scroll: false });
+      switchAccountView("form");
+      return;
+    }
+    if (action === "account-list") {
+      switchTab("accounts", { scroll: false });
+      switchAccountView("list");
+    }
+  });
 });
 
 tabButtons.forEach(button => {
