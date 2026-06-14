@@ -7,6 +7,12 @@ const emptyState = document.querySelector("#emptyState");
 const filterSelect = document.querySelector("#filterSelect");
 const typeFilterSelect = document.querySelector("#typeFilterSelect");
 const searchInput = document.querySelector("#searchInput");
+const billBulkToolbar = document.querySelector("#billBulkToolbar");
+const selectAllBills = document.querySelector("#selectAllBills");
+const selectedBillsCount = document.querySelector("#selectedBillsCount");
+const markSelectedBillsPaidBtn = document.querySelector("#markSelectedBillsPaidBtn");
+const uploadSelectedBillsCalendarBtn = document.querySelector("#uploadSelectedBillsCalendarBtn");
+const deleteSelectedBillsBtn = document.querySelector("#deleteSelectedBillsBtn");
 const todayDueCount = document.querySelector("#todayDueCount");
 const todayDueList = document.querySelector("#todayDueList");
 const weekDueCount = document.querySelector("#weekDueCount");
@@ -81,6 +87,27 @@ const monthlyPaymentDayLabelText = document.querySelector("#monthlyPaymentDayLab
 const amountLabelText = document.querySelector("#amountLabelText");
 const rentExtraField = document.querySelector("#rentExtraField");
 const rentTotalPreview = document.querySelector("#rentTotalPreview");
+const recurrenceIntervalField = document.querySelector("#recurrenceIntervalField");
+const customCycleMonthsField = document.querySelector("#customCycleMonthsField");
+const toggleAccountPasswordInput = document.querySelector("#toggleAccountPasswordInput");
+const dashboardElements = {
+  todayDue: document.querySelector("#dashboardTodayDue"),
+  todayAmount: document.querySelector("#dashboardTodayAmount"),
+  weekDue: document.querySelector("#dashboardWeekDue"),
+  weekAmount: document.querySelector("#dashboardWeekAmount"),
+  monthPaid: document.querySelector("#dashboardMonthPaid"),
+  monthPaidCount: document.querySelector("#dashboardMonthPaidCount"),
+  monthUnpaid: document.querySelector("#dashboardMonthUnpaid"),
+  monthUnpaidCount: document.querySelector("#dashboardMonthUnpaidCount"),
+  overdueCount: document.querySelector("#dashboardOverdueCount"),
+  overdueAmount: document.querySelector("#dashboardOverdueAmount"),
+  monthExpected: document.querySelector("#dashboardMonthExpected"),
+  cashFlowChart: document.querySelector("#dashboardCashFlowChart"),
+  cashFlowTotal: document.querySelector("#dashboardCashFlowTotal"),
+  monthCompareChart: document.querySelector("#dashboardMonthCompareChart"),
+  monthCompareDiff: document.querySelector("#dashboardMonthCompareDiff"),
+  monthCompareText: document.querySelector("#dashboardMonthCompareText")
+};
 
 let loadedState = { cards: [], history: [], encryptedAccounts: null, legacyAccounts: [], settings: defaultSettings() };
 let cards = [];
@@ -97,6 +124,8 @@ let googleTokenClient = null;
 let googleAccessToken = "";
 let accountSearchKeyword = "";
 let selectedAccountIds = new Set();
+let selectedBillIds = new Set();
+let activeDashboardFilter = "";
 
 const ACCOUNT_MAX_UNLOCK_ATTEMPTS = 5;
 const ACCOUNT_LOCKOUT_MS = 60 * 60 * 1000;
@@ -221,6 +250,8 @@ const fields = {
   monthlyPaymentDay: document.querySelector("#monthlyPaymentDay"),
   paymentMethod: document.querySelector("#paymentMethod"),
   billingMode: document.querySelector("#billingMode"),
+  recurrenceInterval: document.querySelector("#recurrenceInterval"),
+  customCycleMonths: document.querySelector("#customCycleMonths"),
   paymentAccount: document.querySelector("#paymentAccount"),
   remindDays: document.querySelector("#remindDays"),
   note: document.querySelector("#note")
@@ -623,6 +654,40 @@ function getDefaultAmountMode(type) {
 
 function shouldCarryAmount(card) {
   return normalizeAmountMode(card?.amountMode || getDefaultAmountMode(card?.billType)) === "fixed";
+}
+
+const RECURRENCE_MONTH_MAP = {
+  monthly: 1,
+  bimonthly: 2,
+  quarterly: 3,
+  semiannual: 6,
+  yearly: 12
+};
+
+function normalizeRecurrenceInterval(value) {
+  return ["monthly", "bimonthly", "quarterly", "semiannual", "yearly", "custom"].includes(value) ? value : "monthly";
+}
+
+function normalizeCustomCycleMonths(value) {
+  const number = Math.round(Number(value || 0));
+  return Math.min(36, Math.max(1, number || 1));
+}
+
+function getRecurrenceMonths(card) {
+  const interval = normalizeRecurrenceInterval(card?.recurrenceInterval);
+  if (interval === "custom") return normalizeCustomCycleMonths(card?.customCycleMonths);
+  return RECURRENCE_MONTH_MAP[interval] || 1;
+}
+
+function getRecurrenceText(card) {
+  if (card?.billingMode === "manual") return "不建立下期";
+  const interval = normalizeRecurrenceInterval(card?.recurrenceInterval);
+  if (interval === "monthly") return "每月";
+  if (interval === "bimonthly") return "每 2 個月";
+  if (interval === "quarterly") return "每季 / 每 3 個月";
+  if (interval === "semiannual") return "每半年";
+  if (interval === "yearly") return "每年";
+  return `每 ${getRecurrenceMonths(card)} 個月`;
 }
 
 function getMonthlyPaymentDay(card) {
@@ -1046,7 +1111,23 @@ function updateAccountVaultUI() {
 
 
 function normalizeMoneyInput(value) {
-  return Math.max(0, Number(value || 0));
+  const cleaned = String(value ?? "")
+    .replace(/[,，\s]/g, "")
+    .replace(/^NT\$?/i, "")
+    .replace(/^\$/i, "");
+  const number = Number(cleaned || 0);
+  return Number.isFinite(number) ? Math.max(0, number) : 0;
+}
+
+function formatMoneyInputElement(input) {
+  if (!input) return;
+  const value = normalizeMoneyInput(input.value);
+  input.value = value > 0 ? value.toLocaleString("zh-TW", { maximumFractionDigits: 0 }) : "";
+}
+
+function unformatMoneyInputElement(input) {
+  if (!input) return;
+  input.value = input.value.replace(/[,，\s]/g, "");
 }
 
 function getRentExtraAmounts(card) {
@@ -1115,6 +1196,8 @@ function normalizeCard(card) {
     minimumAmount: creditCardBill ? Math.max(0, Number(card.minimumAmount || 0)) : 0,
     paymentMethod: card.paymentMethod === "auto" ? "auto" : "manual",
     billingMode: card.billingMode === "manual" ? "manual" : "recurring",
+    recurrenceInterval: normalizeRecurrenceInterval(card.recurrenceInterval),
+    customCycleMonths: normalizeCustomCycleMonths(card.customCycleMonths),
     paymentAccount: String(card.paymentAccount || "").trim(),
     remindDays: Math.max(0, Number(card.remindDays ?? 3)),
     note: String(card.note || "").trim(),
@@ -1149,6 +1232,8 @@ function normalizeHistoryItem(item) {
     minimumAmount: isCreditCardBillType(item.billType) ? Math.max(0, Number(item.minimumAmount || 0)) : 0,
     paymentMethod: item.paymentMethod === "auto" ? "auto" : "manual",
     billingMode: item.billingMode === "manual" ? "manual" : "recurring",
+    recurrenceInterval: normalizeRecurrenceInterval(item.recurrenceInterval),
+    customCycleMonths: normalizeCustomCycleMonths(item.customCycleMonths),
     paymentAccount: String(item.paymentAccount || "").trim(),
     paidAt: item.paidAt || new Date().toISOString(),
     periodDate: isValidDateString(item.periodDate) ? item.periodDate : item.dueDate
@@ -1309,7 +1394,7 @@ function buildImportPreviewMessage(imported) {
     : "備份檔未記錄";
 
   return [
-    "請先確認備份內容，按下覆蓋後會取代目前裝置資料。",
+    "請先確認備份內容，可選擇覆蓋目前資料或合併匯入。",
     "",
     "目前裝置：",
     `帳單 ${cards.length} 筆，其中未繳 ${currentUnpaid} 筆`,
@@ -1325,6 +1410,43 @@ function buildImportPreviewMessage(imported) {
     "",
     "此操作不會主動刪除 Google 日曆上的既有事件，只會還原 App 內保存的資料與同步標記。"
   ].join("\n");
+}
+
+async function mergeImportedState(imported) {
+  const beforeCardIds = new Set(cards.map(item => item.id));
+  const beforeHistoryIds = new Set(history.map(item => item.id));
+  const cardMap = new Map(cards.map(item => [item.id, item]));
+  imported.cards.forEach(item => cardMap.set(item.id, item));
+  cards = [...cardMap.values()].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+  const historyMap = new Map(history.map(item => [item.id, item]));
+  imported.history.forEach(item => historyMap.set(item.id, item));
+  history = [...historyMap.values()].sort((a, b) => new Date(b.paidAt || 0) - new Date(a.paidAt || 0));
+
+  if (!encryptedAccounts && imported.encryptedAccounts) {
+    encryptedAccounts = imported.encryptedAccounts;
+    legacyAccounts = [];
+    accounts = [];
+    accountVaultUnlocked = false;
+    accountVaultPasswordCache = "";
+  } else if (!encryptedAccounts && imported.legacyAccounts?.length) {
+    const accountMap = new Map(legacyAccounts.map(item => [item.id || `${item.service}:${item.username}`, item]));
+    imported.legacyAccounts.forEach(item => accountMap.set(item.id || `${item.service}:${item.username}`, item));
+    legacyAccounts = [...accountMap.values()];
+  }
+
+  settings = { ...settings, ...imported.settings, googleClientId: settings.googleClientId || imported.settings?.googleClientId || "" };
+  selectedAccountIds.clear();
+  resetForm();
+  resetAccountForm();
+  hideChangeMasterPasswordForm();
+  await saveState();
+  render();
+  updateAccountVaultUI();
+  return {
+    cards: cards.filter(item => !beforeCardIds.has(item.id) || imported.cards.some(importedCard => importedCard.id === item.id)).length,
+    history: history.filter(item => !beforeHistoryIds.has(item.id) || imported.history.some(importedItem => importedItem.id === item.id)).length
+  };
 }
 
 async function applyImportedState(imported) {
@@ -1362,14 +1484,20 @@ async function importData(file) {
       type: "warning",
       message: previewMessage,
       choices: [
+        { label: "合併匯入", value: "merge", variant: "primary" },
         { label: "覆蓋目前資料", value: "overwrite", variant: "danger" },
         { label: "取消", value: "cancel" }
       ]
     });
-    if (choice !== "overwrite") return;
-
-    await applyImportedState(imported);
-    await showAppAlert("匯入完成，資料已還原。", { type: "success", title: "匯入完成" });
+    if (choice === "overwrite") {
+      await applyImportedState(imported);
+      await showAppAlert("匯入完成，資料已還原。", { type: "success", title: "匯入完成" });
+      return;
+    }
+    if (choice === "merge") {
+      const result = await mergeImportedState(imported);
+      await showAppAlert(`合併完成。新增/更新帳單 ${result.cards} 筆、繳費紀錄 ${result.history} 筆。`, { type: "success", title: "合併完成" });
+    }
   } catch {
     await showAppAlert("匯入失敗：請確認選到的是 JSON 備份檔。", { type: "danger", title: "匯入失敗" });
   } finally {
@@ -1443,16 +1571,17 @@ function getDiffDays(dueDateString) {
   return Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
 }
 
-function addOneMonth(dateString) {
+function addMonthsToDate(dateString, months = 1) {
+  if (!isValidDateString(dateString)) return dateString;
   const [year, month, day] = dateString.split("-").map(Number);
-  const targetMonthIndex = month;
+  const targetMonthIndex = month - 1 + Math.max(1, Number(months || 1));
   const lastDayOfTargetMonth = new Date(year, targetMonthIndex + 1, 0).getDate();
   const safeDay = Math.min(day, lastDayOfTargetMonth);
-  const nextDate = new Date(year, targetMonthIndex, safeDay);
-  const yyyy = nextDate.getFullYear();
-  const mm = String(nextDate.getMonth() + 1).padStart(2, "0");
-  const dd = String(nextDate.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  return toDateInputValue(new Date(year, targetMonthIndex, safeDay));
+}
+
+function addOneMonth(dateString) {
+  return addMonthsToDate(dateString, 1);
 }
 
 function addPaymentHistory(card, paidAt = new Date().toISOString()) {
@@ -1474,6 +1603,8 @@ function addPaymentHistory(card, paidAt = new Date().toISOString()) {
     minimumAmount: Number(card.minimumAmount || 0),
     paymentMethod: card.paymentMethod || "manual",
     billingMode: card.billingMode || "recurring",
+    recurrenceInterval: normalizeRecurrenceInterval(card.recurrenceInterval),
+    customCycleMonths: normalizeCustomCycleMonths(card.customCycleMonths),
     paymentAccount: card.paymentAccount || "",
     paidAt
   });
@@ -1491,11 +1622,12 @@ function moveToNextBillingCycle(card) {
   const monthlyPayment = isMonthlyPaymentType(card.billType);
   const creditCardBill = isCreditCardBillType(card.billType);
   const carryAmount = shouldCarryAmount(card);
+  const cycleMonths = getRecurrenceMonths(card);
 
   addPaymentHistory(card, paidAt);
 
-  card.statementDate = creditCardBill ? addOneMonth(card.statementDate) : "";
-  card.dueDate = creditCardBill ? moveWeekendToNextBusinessDay(addOneMonth(card.dueDate)) : addOneMonth(card.dueDate);
+  card.statementDate = creditCardBill ? addMonthsToDate(card.statementDate, cycleMonths) : "";
+  card.dueDate = creditCardBill ? moveWeekendToNextBusinessDay(addMonthsToDate(card.dueDate, cycleMonths)) : addMonthsToDate(card.dueDate, cycleMonths);
   if (normalizeBillType(card.billType) === "rent") {
     card.rentBaseAmount = previousRentBaseAmount || previousAmount;
     card.rentWaterAmount = 0;
@@ -1539,14 +1671,19 @@ function markPaidWithoutNextCycle(card) {
   };
 }
 
-function getStatus(card) {
-  if (card.isPaid) return { text: "已繳費", type: "success" };
-
+function getNotificationTier(card) {
+  if (card.isPaid) return { key: "paid", text: "已繳費", type: "success" };
   const diffDays = getDiffDays(card.dueDate);
-  if (diffDays < 0) return { text: `已逾期 ${Math.abs(diffDays)} 天`, type: "danger" };
-  if (diffDays === 0) return { text: "今天截止", type: "danger" };
-  if (diffDays <= Number(card.remindDays || 0)) return { text: `提醒中，剩 ${diffDays} 天`, type: "warning" };
-  return { text: `剩 ${diffDays} 天`, type: "normal" };
+  if (diffDays < 0) return { key: "overdue", text: `已逾期 ${Math.abs(diffDays)} 天`, type: "danger" };
+  if (diffDays === 0) return { key: "today", text: "今天截止", type: "danger" };
+  if (diffDays <= 3) return { key: "critical", text: `緊急提醒，剩 ${diffDays} 天`, type: "danger" };
+  if (diffDays <= 7) return { key: "soon", text: `重要提醒，剩 ${diffDays} 天`, type: "warning" };
+  if (diffDays <= Number(card.remindDays || 0)) return { key: "remind", text: `普通提醒，剩 ${diffDays} 天`, type: "normal" };
+  return { key: "normal", text: `剩 ${diffDays} 天`, type: "normal" };
+}
+
+function getStatus(card) {
+  return getNotificationTier(card);
 }
 
 function isUrgent(card) {
@@ -1555,13 +1692,7 @@ function isUrgent(card) {
 }
 
 function getDueTone(card) {
-  if (card.isPaid) return "paid";
-  const diff = getDiffDays(card.dueDate);
-  if (diff < 0) return "overdue";
-  if (diff === 0) return "today";
-  if (diff <= 3) return "near";
-  if (diff <= 7) return "soon";
-  return "normal";
+  return getNotificationTier(card).key;
 }
 
 function getDueToneText(card) {
@@ -1824,7 +1955,7 @@ function getPaymentMethodText(card) {
 }
 
 function getBillingModeText(card) {
-  return card.billingMode === "manual" ? "手動" : (isMonthlyPaymentType(card.billType) ? "每月固定付款" : "循環");
+  return card.billingMode === "manual" ? "手動" : `循環：${getRecurrenceText(card)}`;
 }
 
 function getAmountModeText(card) {
@@ -1910,6 +2041,304 @@ function renderBackupReminder() {
   backupReminder.classList.remove("hidden");
 }
 
+function getCurrentMonthPaidHistory() {
+  return history.filter(item => isHistoryInCurrentBillMonth(item));
+}
+
+
+function getMonthRange(offset = 0, baseDate = new Date()) {
+  const year = baseDate.getFullYear();
+  const month = baseDate.getMonth() + offset;
+  return {
+    start: new Date(year, month, 1),
+    end: new Date(year, month + 1, 0),
+    year: new Date(year, month, 1).getFullYear(),
+    month: new Date(year, month, 1).getMonth()
+  };
+}
+
+function isDateInMonth(dateString, range) {
+  if (!isValidDateString(dateString)) return false;
+  const date = parseDateInput(dateString);
+  return !!date && date.getFullYear() === range.year && date.getMonth() === range.month;
+}
+
+function getMonthPaidHistoryByOffset(offset = 0) {
+  const range = getMonthRange(offset);
+  return history.filter(item => isDateInMonth(getHistoryPeriodDate(item), range));
+}
+
+function getMonthUnpaidCardsByOffset(offset = 0) {
+  const range = getMonthRange(offset);
+  return cards.filter(card => !card.isPaid && isDateInMonth(card.dueDate, range));
+}
+
+function getCurrentMonthEstimatedItems() {
+  return [
+    ...getMonthPaidHistoryByOffset(0).map(item => ({
+      date: getHistoryPeriodDate(item),
+      name: getDisplayName(item),
+      amount: Number(item.amount || 0),
+      status: "已繳"
+    })),
+    ...getMonthUnpaidCardsByOffset(0).map(card => ({
+      date: card.dueDate,
+      name: getDisplayName(card),
+      amount: Number(card.amount || 0),
+      status: "待繳"
+    }))
+  ].filter(item => isValidDateString(item.date));
+}
+
+function renderDashboardCashFlow(items = getCurrentMonthEstimatedItems()) {
+  const chart = dashboardElements.cashFlowChart;
+  const totalEl = dashboardElements.cashFlowTotal;
+  if (!chart) return;
+
+  const grouped = new Map();
+  items.forEach(item => {
+    const date = item.date;
+    if (!grouped.has(date)) grouped.set(date, { date, amount: 0, paid: 0, unpaid: 0, count: 0 });
+    const row = grouped.get(date);
+    row.amount += Number(item.amount || 0);
+    row.count += 1;
+    if (item.status === "已繳") row.paid += Number(item.amount || 0);
+    else row.unpaid += Number(item.amount || 0);
+  });
+
+  const rows = [...grouped.values()].sort((a, b) => a.date.localeCompare(b.date));
+  const total = rows.reduce((sum, row) => sum + row.amount, 0);
+  if (totalEl) totalEl.textContent = formatMoney(total);
+  if (rows.length === 0 || total <= 0) {
+    chart.classList.add("empty");
+    chart.textContent = "尚無本月現金流資料。";
+    return;
+  }
+
+  const maxAmount = Math.max(...rows.map(row => row.amount), 1);
+  chart.classList.remove("empty");
+  chart.innerHTML = rows.map(row => {
+    const height = Math.max(8, Math.round((row.amount / maxAmount) * 100));
+    const day = String(Number(row.date.slice(-2)));
+    return `
+      <div class="cash-flow-bar" title="${escapeHtml(row.date)}：${formatMoney(row.amount)}，共 ${row.count} 筆">
+        <span class="cash-flow-value">${escapeHtml(formatMoney(row.amount))}</span>
+        <i style="height:${height}%"></i>
+        <b>${escapeHtml(day)}</b>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderDashboardMonthCompare(currentTotal) {
+  const chart = dashboardElements.monthCompareChart;
+  const diffEl = dashboardElements.monthCompareDiff;
+  const textEl = dashboardElements.monthCompareText;
+  if (!chart) return;
+
+  const previousTotal = getMonthPaidHistoryByOffset(-1).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const maxAmount = Math.max(currentTotal, previousTotal, 1);
+  const diff = currentTotal - previousTotal;
+  if (diffEl) diffEl.textContent = `${diff >= 0 ? "+" : "-"}${formatMoney(Math.abs(diff))}`;
+
+  if (currentTotal <= 0 && previousTotal <= 0) {
+    chart.classList.add("empty");
+    chart.textContent = "尚無足夠資料比較。";
+    if (textEl) textEl.textContent = "等待新增帳單或繳費紀錄。";
+    return;
+  }
+
+  chart.classList.remove("empty");
+  const rows = [
+    { label: "上月實際", amount: previousTotal },
+    { label: "本月預估", amount: currentTotal }
+  ];
+  chart.innerHTML = rows.map(row => {
+    const width = Math.max(5, Math.round((row.amount / maxAmount) * 100));
+    return `
+      <div class="month-compare-row">
+        <span>${escapeHtml(row.label)}</span>
+        <div class="month-compare-track"><i style="width:${width}%"></i></div>
+        <strong>${formatMoney(row.amount)}</strong>
+      </div>
+    `;
+  }).join("");
+
+  if (textEl) {
+    if (previousTotal <= 0) textEl.textContent = "上月尚無繳費紀錄，本月資料會先作為基準。";
+    else if (diff > 0) textEl.textContent = `本月預估比上月多 ${formatMoney(diff)}。`;
+    else if (diff < 0) textEl.textContent = `本月預估比上月少 ${formatMoney(Math.abs(diff))}。`;
+    else textEl.textContent = "本月預估與上月相同。";
+  }
+}
+
+function renderDashboardAnalytics(currentTotal = null) {
+  const items = getCurrentMonthEstimatedItems();
+  const total = currentTotal ?? items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  renderDashboardCashFlow(items);
+  renderDashboardMonthCompare(total);
+}
+
+function getVisibleBillIds() {
+  return getFilteredCards().map(card => card.id);
+}
+
+function updateBillBulkToolbar(filteredCards = getFilteredCards()) {
+  if (!billBulkToolbar) return;
+  selectedBillIds = new Set([...selectedBillIds].filter(id => cards.some(card => card.id === id)));
+  const visibleIds = filteredCards.map(card => card.id);
+  const visibleSelectedCount = visibleIds.filter(id => selectedBillIds.has(id)).length;
+  const totalSelectedCount = selectedBillIds.size;
+
+  billBulkToolbar.classList.toggle("hidden", cards.length === 0);
+  if (selectedBillsCount) selectedBillsCount.textContent = `已選 ${totalSelectedCount} 筆`;
+  [markSelectedBillsPaidBtn, uploadSelectedBillsCalendarBtn, deleteSelectedBillsBtn].forEach(button => {
+    if (button) button.disabled = totalSelectedCount === 0;
+  });
+  if (selectAllBills) {
+    selectAllBills.checked = visibleIds.length > 0 && visibleSelectedCount === visibleIds.length;
+    selectAllBills.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visibleIds.length;
+    selectAllBills.disabled = visibleIds.length === 0;
+  }
+}
+
+async function markSelectedBillsPaid() {
+  const selectedCards = cards.filter(card => selectedBillIds.has(card.id) && !card.isPaid);
+  if (selectedCards.length === 0) {
+    showAppToast("已選帳單沒有需要標記的未繳項目。", "warning");
+    return;
+  }
+  const confirmed = await showAppConfirm(
+    `確定要將已選的 ${selectedCards.length} 筆未繳帳單標記為已繳嗎？\n\n循環帳單會建立下一期；手動帳單只會留下繳費紀錄。`,
+    { title: "批次標記已繳", type: "success", confirmText: "批次標記" }
+  );
+  if (!confirmed) return;
+
+  for (const card of selectedCards) {
+    const cardSnapshot = { ...card };
+    try {
+      await askRemoveGoogleReminderForPaidCard(cardSnapshot);
+    } catch (error) {
+      await showAppAlert(
+        `「${getDisplayName(card)}」Google 日曆同步失敗，批次操作已停止：${error.message || "請稍後再試。"}`,
+        { type: "danger", title: "Google 日曆同步失敗" }
+      );
+      saveState();
+      render();
+      return;
+    }
+    if (card.billingMode === "manual") {
+      markPaidWithoutNextCycle(card);
+      if (cardSnapshot.googleCalendarEventId) clearGoogleSyncFields(card);
+    } else {
+      moveToNextBillingCycle(card);
+    }
+  }
+
+  selectedBillIds.clear();
+  saveState();
+  render();
+  showAppToast(`已批次更新 ${selectedCards.length} 筆帳單。`, "success");
+}
+
+async function uploadSelectedBillsToCalendar() {
+  if (!settings.googleClientId) {
+    await showAppAlert(
+      "請先到「設定」貼上你的 Google OAuth Client ID，再使用批次加入日曆。",
+      { type: "warning", title: "尚未設定 Google 日曆" }
+    );
+    switchTab("settings");
+    googleClientIdInput?.focus();
+    return;
+  }
+  const selectedCards = cards.filter(card => selectedBillIds.has(card.id) && !card.isPaid);
+  if (selectedCards.length === 0) {
+    showAppToast("請選取未繳帳單再加入 Google 日曆。", "warning");
+    return;
+  }
+  const confirmed = await showAppConfirm(
+    `確定要將已選的 ${selectedCards.length} 筆未繳帳單加入或更新 Google 日曆提醒嗎？`,
+    { title: "批次加入日曆", type: "info", confirmText: "開始同步" }
+  );
+  if (!confirmed) return;
+
+  let successCount = 0;
+  for (const card of selectedCards) {
+    try {
+      await uploadToGoogleCalendar(card, { silent: true });
+      successCount += 1;
+    } catch (error) {
+      await showAppAlert(
+        `「${getDisplayName(card)}」加入 Google 日曆失敗，批次操作已停止：${error.message || "請稍後再試。"}`,
+        { type: "danger", title: "Google 日曆同步失敗" }
+      );
+      render();
+      return;
+    }
+  }
+  saveState();
+  render();
+  showAppToast(`已同步 ${successCount} 筆帳單到 Google 日曆。`, "success");
+}
+
+async function deleteSelectedBills() {
+  const selectedCards = cards.filter(card => selectedBillIds.has(card.id));
+  if (selectedCards.length === 0) return;
+  const confirmed = await showAppConfirm(
+    `確定要刪除已選的 ${selectedCards.length} 筆帳單嗎？此動作無法復原。`,
+    { title: "批次刪除帳單", type: "danger", confirmText: "刪除已選" }
+  );
+  if (!confirmed) return;
+
+  for (const card of selectedCards) {
+    try {
+      const shouldContinueLocalDelete = await handleGoogleSyncAfterDelete({ ...card });
+      if (!shouldContinueLocalDelete) return;
+    } catch (error) {
+      await showAppAlert(
+        `「${getDisplayName(card)}」Google 日曆同步失敗，批次刪除已停止：${error.message || "請稍後再試。"}`,
+        { type: "danger", title: "Google 日曆同步失敗" }
+      );
+      return;
+    }
+  }
+
+  const selectedIds = new Set(selectedCards.map(card => card.id));
+  cards = cards.filter(card => !selectedIds.has(card.id));
+  selectedBillIds.clear();
+  saveState();
+  render();
+  showAppToast(`已刪除 ${selectedCards.length} 筆帳單。`, "success");
+}
+
+function renderDashboardSummary() {
+  const unpaid = cards.filter(card => !card.isPaid && isValidDateString(card.dueDate));
+  const today = unpaid.filter(card => getDiffDays(card.dueDate) === 0);
+  const week = unpaid.filter(card => {
+    const diff = getDiffDays(card.dueDate);
+    return diff >= 0 && diff <= 7;
+  });
+  const overdue = unpaid.filter(card => getDiffDays(card.dueDate) < 0);
+  const monthUnpaid = getCurrentMonthDueCards();
+  const monthPaid = getCurrentMonthPaidHistory();
+  const sumAmount = list => list.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const paidTotal = sumAmount(monthPaid);
+  const monthUnpaidTotal = sumAmount(monthUnpaid);
+
+  if (dashboardElements.todayDue) dashboardElements.todayDue.textContent = today.length;
+  if (dashboardElements.todayAmount) dashboardElements.todayAmount.textContent = formatMoney(sumAmount(today));
+  if (dashboardElements.weekDue) dashboardElements.weekDue.textContent = week.length;
+  if (dashboardElements.weekAmount) dashboardElements.weekAmount.textContent = formatMoney(sumAmount(week));
+  if (dashboardElements.monthPaid) dashboardElements.monthPaid.textContent = formatMoney(paidTotal);
+  if (dashboardElements.monthPaidCount) dashboardElements.monthPaidCount.textContent = `${monthPaid.length} 筆紀錄`;
+  if (dashboardElements.monthUnpaid) dashboardElements.monthUnpaid.textContent = formatMoney(monthUnpaidTotal);
+  if (dashboardElements.monthUnpaidCount) dashboardElements.monthUnpaidCount.textContent = `${monthUnpaid.length} 筆帳單`;
+  if (dashboardElements.overdueCount) dashboardElements.overdueCount.textContent = overdue.length;
+  if (dashboardElements.overdueAmount) dashboardElements.overdueAmount.textContent = formatMoney(sumAmount(overdue));
+  if (dashboardElements.monthExpected) dashboardElements.monthExpected.textContent = formatMoney(paidTotal + monthUnpaidTotal);
+  renderDashboardAnalytics(paidTotal + monthUnpaidTotal);
+}
+
 function renderSummary() {
   const unpaid = cards.filter(card => !card.isPaid);
   const urgent = unpaid.filter(isUrgent);
@@ -1918,7 +2347,27 @@ function renderSummary() {
   document.querySelector("#unpaidCount").textContent = unpaid.length;
   document.querySelector("#urgentCount").textContent = urgent.length;
   document.querySelector("#totalAmount").textContent = formatMoney(total);
+  renderDashboardSummary();
   renderDueOverview();
+}
+
+function applyDashboardFilter(list) {
+  if (!activeDashboardFilter) return list;
+  if (activeDashboardFilter === "today") return list.filter(card => !card.isPaid && getDiffDays(card.dueDate) === 0);
+  if (activeDashboardFilter === "week") return list.filter(card => {
+    const diff = getDiffDays(card.dueDate);
+    return !card.isPaid && diff >= 0 && diff <= 7;
+  });
+  if (activeDashboardFilter === "overdue") return list.filter(card => !card.isPaid && getDiffDays(card.dueDate) < 0);
+  if (activeDashboardFilter === "unpaid-month" || activeDashboardFilter === "month-total") {
+    const now = new Date();
+    return list.filter(card => {
+      if (card.isPaid || !isValidDateString(card.dueDate)) return false;
+      const due = parseDateInput(card.dueDate);
+      return due && due.getFullYear() === now.getFullYear() && due.getMonth() === now.getMonth();
+    });
+  }
+  return list;
 }
 
 function getFilteredCards() {
@@ -1935,11 +2384,11 @@ function getFilteredCards() {
     sortedCards = sortedCards.filter(card => normalizeBillType(card.billType) === typeFilter);
   }
 
-  if (filter === "paid") return sortedCards.filter(card => card.isPaid);
-  if (filter === "unpaid") return sortedCards.filter(card => !card.isPaid);
-  if (filter === "urgent") return sortedCards.filter(isUrgent);
-  if (filter === "overdue") return sortedCards.filter(card => !card.isPaid && getDiffDays(card.dueDate) < 0);
-  return sortedCards;
+  if (filter === "paid") sortedCards = sortedCards.filter(card => card.isPaid);
+  else if (filter === "unpaid") sortedCards = sortedCards.filter(card => !card.isPaid);
+  else if (filter === "urgent") sortedCards = sortedCards.filter(isUrgent);
+  else if (filter === "overdue") sortedCards = sortedCards.filter(card => !card.isPaid && getDiffDays(card.dueDate) < 0);
+  return applyDashboardFilter(sortedCards);
 }
 
 function getDisplayName(card) {
@@ -1948,8 +2397,10 @@ function getDisplayName(card) {
 
 function renderCards() {
   const filteredCards = getFilteredCards();
+  selectedBillIds = new Set([...selectedBillIds].filter(id => cards.some(card => card.id === id)));
   cardList.innerHTML = "";
   emptyState.classList.toggle("hidden", filteredCards.length > 0);
+  updateBillBulkToolbar(filteredCards);
 
   filteredCards.forEach(card => {
     const status = getStatus(card);
@@ -1960,6 +2411,10 @@ function renderCards() {
     article.dataset.cardId = card.id;
     article.innerHTML = `
       <div class="bill-top compact-top">
+        <label class="bill-select-row" title="選取此帳單">
+          <input type="checkbox" data-bill-select="${escapeHtml(card.id)}" ${selectedBillIds.has(card.id) ? "checked" : ""} />
+          <span class="visually-hidden">選取 ${escapeHtml(getDisplayName(card))}</span>
+        </label>
         <div class="bill-title-wrap">
           <h3 class="bill-name">${escapeHtml(getDisplayName(card))}</h3>
           <div class="bill-bank compact-subline">${getBillTypeText(card.billType)}${card.cardName ? `｜${escapeHtml(card.bankName)}` : ""}</div>
@@ -1982,6 +2437,10 @@ function renderCards() {
         <div>
           <span>金額模式</span>
           <strong>${getAmountModeText(card)}</strong>
+        </div>
+        <div>
+          <span>週期</span>
+          <strong>${escapeHtml(getRecurrenceText(card))}</strong>
         </div>
       </div>
       ${card.paymentMethod === "auto" ? `<p class="compact-hint">自動扣繳，記得確認扣款。</p>` : ""}
@@ -2028,6 +2487,8 @@ function buildBillDetailRows(card, googleSync) {
   rows.push(
     ["繳費方式", getPaymentMethodText(card)],
     ["帳單模式", getBillingModeText(card)],
+    ["重複週期", getRecurrenceText(card)],
+    ["提醒分級", "7 天內重要、3 天內緊急、今天/逾期紅色警告"],
     ["提前提醒", `提前 ${Number(card.remindDays || 0)} 天`],
     ["繳費帳戶備註", card.paymentAccount || "未填"],
     ["備註", card.note || "未填"],
@@ -2134,6 +2595,11 @@ function resetAccountForm() {
   if (!accountForm) return;
   accountForm.reset();
   accountFields.accountId.value = "";
+  if (accountFields.password) accountFields.password.type = "password";
+  if (toggleAccountPasswordInput) {
+    toggleAccountPasswordInput.textContent = "顯示";
+    toggleAccountPasswordInput.setAttribute("aria-pressed", "false");
+  }
   resetAccountBtn?.classList.add("hidden");
 }
 
@@ -2502,6 +2968,47 @@ function escapeHtml(value) {
   }[char]));
 }
 
+function updateDateInputConstraints() {
+  if (!fields.statementDate || !fields.dueDate) return;
+  fields.dueDate.min = fields.statementDate.value || "";
+}
+
+function validateBillFormDates() {
+  const billType = normalizeBillType(fields.billType?.value);
+  const creditCardBill = isCreditCardBillType(billType);
+  const monthlyPayment = isMonthlyPaymentType(billType);
+
+  if (creditCardBill && fields.statementDate?.value && fields.dueDate?.value) {
+    const statement = parseDateInput(fields.statementDate.value);
+    const due = parseDateInput(fields.dueDate.value);
+    if (statement && due && due < statement) {
+      showAppAlert("繳費截止日不能早於帳單日，請重新確認日期。", { type: "warning", title: "日期需要調整" });
+      fields.dueDate.focus();
+      return false;
+    }
+  }
+
+  if (monthlyPayment) {
+    const day = Number(fields.monthlyPaymentDay?.value || 0);
+    if (day < 1 || day > 31) {
+      showAppAlert("每月付款日請輸入 1 到 31 之間的數字。", { type: "warning", title: "付款日格式錯誤" });
+      fields.monthlyPaymentDay.focus();
+      return false;
+    }
+  }
+
+  if (fields.billingMode?.value !== "manual" && fields.recurrenceInterval?.value === "custom") {
+    const months = Number(fields.customCycleMonths?.value || 0);
+    if (months < 1 || months > 36) {
+      showAppAlert("自訂間隔月數請輸入 1 到 36 之間的數字。", { type: "warning", title: "重複週期格式錯誤" });
+      fields.customCycleMonths.focus();
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function updateBillFormMode({ preserveAmountMode = false } = {}) {
   const billType = normalizeBillType(fields.billType?.value);
   const config = getBillTypeConfig(billType);
@@ -2540,10 +3047,16 @@ function updateBillFormMode({ preserveAmountMode = false } = {}) {
   }
   if (monthlyPayment && !fields.monthlyPaymentDay?.value) fields.monthlyPaymentDay.value = "10";
   if (!creditCardBill && fields.minimumAmount) fields.minimumAmount.value = "";
+  const recurring = fields.billingMode?.value !== "manual";
+  recurrenceIntervalField?.classList.toggle("hidden", !recurring);
+  customCycleMonthsField?.classList.toggle("hidden", !recurring || fields.recurrenceInterval?.value !== "custom");
+  if (fields.recurrenceInterval) fields.recurrenceInterval.disabled = !recurring;
+  if (fields.customCycleMonths) fields.customCycleMonths.disabled = !recurring || fields.recurrenceInterval?.value !== "custom";
   if (billType !== "rent") {
     if (fields.rentWaterAmount) fields.rentWaterAmount.value = "";
     if (fields.rentElectricAmount) fields.rentElectricAmount.value = "";
   }
+  updateDateInputConstraints();
   renderRentTotalPreview();
 }
 
@@ -2555,8 +3068,10 @@ function resetForm() {
   fields.amountMode.value = getDefaultAmountMode(fields.billType.value);
   fields.paymentMethod.value = "manual";
   fields.billingMode.value = "recurring";
+  if (fields.recurrenceInterval) fields.recurrenceInterval.value = "monthly";
+  if (fields.customCycleMonths) fields.customCycleMonths.value = "";
   fields.paymentAccount.value = "";
-  fields.remindDays.value = 3;
+  fields.remindDays.value = 7;
   fields.monthlyPaymentDay.value = "";
   if (fields.rentWaterAmount) fields.rentWaterAmount.value = "";
   if (fields.rentElectricAmount) fields.rentElectricAmount.value = "";
@@ -3129,7 +3644,7 @@ async function handleGoogleSyncAfterEdit(oldCard, updatedCard) {
   showAppToast("Google 日曆事件已更新。", "success");
 }
 
-async function uploadToGoogleCalendar(card) {
+async function uploadToGoogleCalendar(card, options = {}) {
   if (!settings.googleClientId) {
     await showAppAlert(
       "請先到「設定」貼上你的 Google OAuth Client ID，再回到帳單清單上傳。\n\nGoogle Cloud 的 OAuth 類型要選 Web application，並把此網頁網址加入 Authorized JavaScript origins。",
@@ -3141,7 +3656,7 @@ async function uploadToGoogleCalendar(card) {
   }
 
   try {
-    showAppToast("正在取得 Google 授權…", "success");
+    if (!options.silent) showAppToast("正在取得 Google 授權…", "success");
     const token = await getGoogleAccessToken();
     const sameDueDateCards = getCardsWithSameDueDate(card);
     const existingEvents = await findGooglePaymentEventsByDueDate(token, card.dueDate);
@@ -3181,15 +3696,18 @@ async function uploadToGoogleCalendar(card) {
     const uploadText = mode === "merge" && existingEvents.length > 0 ? "已成功更新 Google 日曆事件。" : "已成功新增到 Google 日曆。";
     const countText = cardList.length > 1 ? `本日帳單：共 ${cardList.length} 筆` : `事件名稱：${eventPayload.summary}`;
 
-    await showAppDialog({
-      title: "上傳完成",
-      type: "success",
-      message: `${uploadText}\n${countText}\n日期時間：${eventDate} 09:00–09:30\n提醒設定：${reminderText}`,
-      confirmText: "知道了",
-      actionText: result.htmlLink ? "開啟 Google 日曆" : "",
-      actionUrl: result.htmlLink || ""
-    });
+    if (!options.silent) {
+      await showAppDialog({
+        title: "上傳完成",
+        type: "success",
+        message: `${uploadText}\n${countText}\n日期時間：${eventDate} 09:00–09:30\n提醒設定：${reminderText}`,
+        confirmText: "知道了",
+        actionText: result.htmlLink ? "開啟 Google 日曆" : "",
+        actionUrl: result.htmlLink || ""
+      });
+    }
   } catch (error) {
+    if (options.silent) throw error;
     await showAppAlert(
       `上傳失敗：${error.message || "請確認 OAuth Client ID、授權來源與 Google Calendar API 是否已啟用。"}`,
       { type: "danger", title: "Google 日曆上傳失敗" }
@@ -3354,10 +3872,11 @@ async function checkDueNotifications({ force = false } = {}) {
     const key = `${todayKey}:${card.id}:${card.dueDate}`;
     if (!force && notifiedMap[key]) continue;
 
+    const tier = getNotificationTier(card);
     let timing = "";
     if (card.diffDays < 0) timing = `已逾期 ${Math.abs(card.diffDays)} 天`;
     else if (card.diffDays === 0) timing = "今天截止";
-    else timing = `剩 ${card.diffDays} 天截止`;
+    else timing = `${tier.text}截止`;
 
     const notificationParts = [
       timing,
@@ -3368,7 +3887,7 @@ async function checkDueNotifications({ force = false } = {}) {
     if (card.note) notificationParts.push(`備註：${card.note}`);
 
     await showPaymentNotification(
-      `繳費提醒：${getDisplayName(card)}`,
+      `${getNotificationTier(card).type === "danger" ? "緊急" : getNotificationTier(card).type === "warning" ? "重要" : "繳費"}提醒：${getDisplayName(card)}`,
       notificationParts.join("｜"),
       `payment-manager-${card.id}-${card.dueDate}`
     );
@@ -3397,7 +3916,66 @@ async function requestNotificationPermission() {
   }
 }
 
+function setupPullToRefresh() {
+  const indicator = document.createElement("div");
+  indicator.className = "pull-refresh-indicator";
+  indicator.setAttribute("aria-live", "polite");
+  indicator.textContent = "下拉重新整理";
+  document.body.appendChild(indicator);
+
+  let startY = 0;
+  let pulling = false;
+  let ready = false;
+  const threshold = 88;
+
+  const isIgnoredTarget = target => Boolean(target?.closest?.("input, textarea, select, button, a, [contenteditable='true'], .app-dialog-backdrop, .account-detail-backdrop"));
+
+  window.addEventListener("touchstart", event => {
+    if (event.touches.length !== 1 || window.scrollY > 0 || isIgnoredTarget(event.target)) {
+      pulling = false;
+      return;
+    }
+
+    startY = event.touches[0].clientY;
+    pulling = true;
+    ready = false;
+    indicator.textContent = "下拉重新整理";
+    indicator.classList.remove("ready");
+  }, { passive: true });
+
+  window.addEventListener("touchmove", event => {
+    if (!pulling || event.touches.length !== 1 || window.scrollY > 0) return;
+
+    const distance = event.touches[0].clientY - startY;
+    if (distance <= 24) return;
+
+    ready = distance >= threshold;
+    indicator.textContent = ready ? "放開重新整理" : "下拉重新整理";
+    indicator.classList.toggle("ready", ready);
+    indicator.classList.add("visible");
+  }, { passive: true });
+
+  window.addEventListener("touchend", () => {
+    if (!pulling) return;
+
+    pulling = false;
+    indicator.classList.remove("visible");
+
+    if (ready) {
+      indicator.textContent = "重新整理中…";
+      setTimeout(() => window.location.reload(), 80);
+    }
+  }, { passive: true });
+
+  window.addEventListener("touchcancel", () => {
+    pulling = false;
+    ready = false;
+    indicator.classList.remove("visible", "ready");
+  }, { passive: true });
+}
+
 function setupEventListeners() {
+setupPullToRefresh();
 accountSubtabButtons.forEach(button => {
   button.addEventListener("click", () => switchAccountView(button.dataset.accountView));
 });
@@ -3455,6 +4033,14 @@ accountForm?.addEventListener("submit", async event => {
   resetAccountForm();
   renderAccounts();
   switchAccountView("list");
+});
+
+toggleAccountPasswordInput?.addEventListener("click", () => {
+  if (!accountFields.password) return;
+  const show = accountFields.password.type === "password";
+  accountFields.password.type = show ? "text" : "password";
+  toggleAccountPasswordInput.textContent = show ? "隱藏" : "顯示";
+  toggleAccountPasswordInput.setAttribute("aria-pressed", show ? "true" : "false");
 });
 
 accountVaultForm?.addEventListener("submit", async event => {
@@ -3526,6 +4112,11 @@ accountList?.addEventListener("click", async event => {
     accountFields.service.value = account.service;
     accountFields.username.value = account.username;
     accountFields.password.value = account.password;
+    if (accountFields.password) accountFields.password.type = "password";
+    if (toggleAccountPasswordInput) {
+      toggleAccountPasswordInput.textContent = "顯示";
+      toggleAccountPasswordInput.setAttribute("aria-pressed", "false");
+    }
     accountFields.url.value = account.url;
     accountFields.note.value = account.note;
     resetAccountBtn?.classList.remove("hidden");
@@ -3569,7 +4160,8 @@ form.addEventListener("submit", async event => {
   const creditCardBill = scheduleType === "credit-card";
   const recurringDay = monthlyPayment ? Number(fields.monthlyPaymentDay.value || 0) : 0;
   const dueDateValue = monthlyPayment ? getNextDueDateFromDay(recurringDay) : fields.dueDate.value;
-  const rentAmounts = normalizeBillType(fields.billType.value) === "rent" ? calculateRentTotalFromForm() : { base: 0, water: 0, electric: 0, total: fields.amount.value === "" ? 0 : Number(fields.amount.value) };
+  if (!validateBillFormDates()) return;
+  const rentAmounts = normalizeBillType(fields.billType.value) === "rent" ? calculateRentTotalFromForm() : { base: 0, water: 0, electric: 0, total: fields.amount.value === "" ? 0 : normalizeMoneyInput(fields.amount.value) };
 
   const card = normalizeCard({
     id: fields.cardId.value || crypto.randomUUID(),
@@ -3579,14 +4171,16 @@ form.addEventListener("submit", async event => {
     statementDate: creditCardBill ? fields.statementDate.value : "",
     dueDate: dueDateValue,
     recurringDay,
-    amount: normalizeBillType(fields.billType.value) === "rent" ? rentAmounts.total : (fields.amount.value === "" ? 0 : Number(fields.amount.value)),
+    amount: normalizeBillType(fields.billType.value) === "rent" ? rentAmounts.total : (fields.amount.value === "" ? 0 : normalizeMoneyInput(fields.amount.value)),
     rentBaseAmount: normalizeBillType(fields.billType.value) === "rent" ? rentAmounts.base : 0,
     rentWaterAmount: normalizeBillType(fields.billType.value) === "rent" ? rentAmounts.water : 0,
     rentElectricAmount: normalizeBillType(fields.billType.value) === "rent" ? rentAmounts.electric : 0,
     amountMode: fields.amountMode.value,
-    minimumAmount: creditCardBill ? Number(fields.minimumAmount.value || 0) : 0,
+    minimumAmount: creditCardBill ? normalizeMoneyInput(fields.minimumAmount.value) : 0,
     paymentMethod: fields.paymentMethod.value,
     billingMode: fields.billingMode.value,
+    recurrenceInterval: fields.recurrenceInterval?.value || "monthly",
+    customCycleMonths: fields.customCycleMonths?.value || 1,
     paymentAccount: fields.paymentAccount.value.trim(),
     remindDays: Number(fields.remindDays.value),
     note: fields.note.value.trim(),
@@ -3603,6 +4197,8 @@ form.addEventListener("submit", async event => {
     const changedBillDetails = existing.statementDate !== card.statementDate
       || existing.dueDate !== card.dueDate
       || Number(existing.recurringDay || 0) !== Number(card.recurringDay || 0)
+      || normalizeRecurrenceInterval(existing.recurrenceInterval) !== normalizeRecurrenceInterval(card.recurrenceInterval)
+      || normalizeCustomCycleMonths(existing.customCycleMonths) !== normalizeCustomCycleMonths(card.customCycleMonths)
       || Number(existing.amount || 0) !== Number(card.amount || 0)
       || Number(existing.rentBaseAmount || 0) !== Number(card.rentBaseAmount || 0)
       || Number(existing.rentWaterAmount || 0) !== Number(card.rentWaterAmount || 0)
@@ -3641,6 +4237,22 @@ form.addEventListener("submit", async event => {
 });
 
 document.querySelector("#tab-bills")?.addEventListener("click", event => {
+  const dashboardButton = event.target.closest("[data-dashboard-filter]");
+  if (dashboardButton) {
+    const filter = dashboardButton.dataset.dashboardFilter;
+    activeDashboardFilter = filter === "paid-month" ? "" : filter;
+    if (filterSelect) filterSelect.value = "all";
+    if (searchInput) searchInput.value = "";
+    if (filter === "paid-month") {
+      switchTab("history", { scroll: true });
+      return;
+    }
+    switchBillView("list");
+    renderCards();
+    cardList?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+
   const button = event.target.closest("[data-due-card-id]");
   if (!button) return;
   const id = button.dataset.dueCardId;
@@ -3652,6 +4264,27 @@ document.querySelector("#tab-bills")?.addEventListener("click", event => {
     window.setTimeout(() => target.closest(".bill-card")?.classList.remove("focus-flash"), 1300);
   }
 });
+
+cardList.addEventListener("change", event => {
+  const checkbox = event.target.closest("[data-bill-select]");
+  if (!checkbox) return;
+  const id = checkbox.dataset.billSelect;
+  if (!id) return;
+  if (checkbox.checked) selectedBillIds.add(id);
+  else selectedBillIds.delete(id);
+  updateBillBulkToolbar(getFilteredCards());
+});
+
+selectAllBills?.addEventListener("change", () => {
+  const visibleIds = getVisibleBillIds();
+  if (selectAllBills.checked) visibleIds.forEach(id => selectedBillIds.add(id));
+  else visibleIds.forEach(id => selectedBillIds.delete(id));
+  renderCards();
+});
+
+markSelectedBillsPaidBtn?.addEventListener("click", markSelectedBillsPaid);
+uploadSelectedBillsCalendarBtn?.addEventListener("click", uploadSelectedBillsToCalendar);
+deleteSelectedBillsBtn?.addEventListener("click", deleteSelectedBills);
 
 cardList.addEventListener("click", async event => {
   const button = event.target.closest("button");
@@ -3748,6 +4381,8 @@ cardList.addEventListener("click", async event => {
     fields.minimumAmount.value = isCreditCardBillType(card.billType) ? (card.minimumAmount || "") : "";
     fields.paymentMethod.value = card.paymentMethod || "manual";
     fields.billingMode.value = card.billingMode || "recurring";
+    if (fields.recurrenceInterval) fields.recurrenceInterval.value = normalizeRecurrenceInterval(card.recurrenceInterval);
+    if (fields.customCycleMonths) fields.customCycleMonths.value = normalizeRecurrenceInterval(card.recurrenceInterval) === "custom" ? String(normalizeCustomCycleMonths(card.customCycleMonths)) : "";
     fields.paymentAccount.value = card.paymentAccount || "";
     fields.remindDays.value = card.remindDays ?? 3;
     fields.note.value = card.note || "";
@@ -3773,13 +4408,22 @@ billSubtabButtons.forEach(button => {
   button.addEventListener("click", () => switchBillView(button.dataset.billView));
 });
 
-filterSelect.addEventListener("change", renderCards);
-typeFilterSelect?.addEventListener("change", renderCards);
+filterSelect.addEventListener("change", () => { activeDashboardFilter = ""; renderCards(); });
+typeFilterSelect?.addEventListener("change", () => { activeDashboardFilter = ""; renderCards(); });
 fields.billType?.addEventListener("change", () => updateBillFormMode());
-[fields.amount, fields.rentWaterAmount, fields.rentElectricAmount].forEach(input => {
+fields.statementDate?.addEventListener("change", updateDateInputConstraints);
+fields.dueDate?.addEventListener("change", validateBillFormDates);
+fields.billingMode?.addEventListener("change", () => updateBillFormMode({ preserveAmountMode: true }));
+fields.recurrenceInterval?.addEventListener("change", () => updateBillFormMode({ preserveAmountMode: true }));
+[fields.amount, fields.rentWaterAmount, fields.rentElectricAmount, fields.minimumAmount].forEach(input => {
+  input?.addEventListener("focus", () => unformatMoneyInputElement(input));
+  input?.addEventListener("blur", () => {
+    formatMoneyInputElement(input);
+    renderRentTotalPreview();
+  });
   input?.addEventListener("input", renderRentTotalPreview);
 });
-searchInput.addEventListener("input", renderCards);
+searchInput.addEventListener("input", () => { activeDashboardFilter = ""; renderCards(); });
 resetBtn.addEventListener("click", resetForm);
 exportBtn.addEventListener("click", exportData);
 backupNowBtn?.addEventListener("click", exportData);

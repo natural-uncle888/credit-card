@@ -1,4 +1,4 @@
-const CACHE_NAME = 'payment-manager-v34-rent-utilities-total-rentquickfix';
+const CACHE_NAME = 'payment-manager-v37-pull-refresh';
 const ASSETS = [
   "./",
   "./index.html",
@@ -24,8 +24,11 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
+  if (event.request.method !== "GET") return;
+
   event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request))
+    caches.match(event.request, { ignoreSearch: true })
+      .then(cached => cached || fetch(event.request))
   );
 });
 

@@ -6,7 +6,7 @@
   <title>繳費管理</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2563eb" />
-  <link rel="stylesheet" href="style.css?v=34-rent-utilities-total" />
+  <link rel="stylesheet" href="style.css?v=37-pull-refresh" />
 </head>
 <body>
   <div class="app">
@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">Payment Reminder</p>
         <h1>繳費管理</h1>
-        <p class="subtitle">用分頁管理帳單、帳號密碼、繳費紀錄與備份設定，支援信用卡、水電費、電信費、保險費等帳單。</p>
+        <p class="subtitle">用分頁管理帳單、帳號密碼、繳費紀錄與備份設定，支援信用卡、水電費、電信費、保險費等帳單。<br><span class="hero-version">目前版本 v37｜v37：修正手機 App 內下拉重新整理手勢，新增自訂下拉刷新提示。</span></p>
       </div>
     </header>
 
@@ -27,6 +27,73 @@
 
     <main class="tab-shell">
       <section id="tab-bills" class="tab-panel active" data-tab-panel="bills">
+        <section class="dashboard-card" aria-label="首頁儀表板">
+          <div class="dashboard-head">
+            <div>
+              <span>Dashboard</span>
+              <h2>本月繳費總覽</h2>
+              <p>快速看今天、7 天內、逾期與本月金額狀態。</p>
+            </div>
+          </div>
+          <div class="dashboard-grid">
+            <button type="button" class="dashboard-tile danger" data-dashboard-filter="today">
+              <span>今天要繳</span>
+              <strong id="dashboardTodayDue">0</strong>
+              <em id="dashboardTodayAmount">NT$0</em>
+            </button>
+            <button type="button" class="dashboard-tile warning" data-dashboard-filter="week">
+              <span>7 天內要繳</span>
+              <strong id="dashboardWeekDue">0</strong>
+              <em id="dashboardWeekAmount">NT$0</em>
+            </button>
+            <button type="button" class="dashboard-tile success" data-dashboard-filter="paid-month">
+              <span>本月已繳</span>
+              <strong id="dashboardMonthPaid">NT$0</strong>
+              <em id="dashboardMonthPaidCount">0 筆紀錄</em>
+            </button>
+            <button type="button" class="dashboard-tile" data-dashboard-filter="unpaid-month">
+              <span>本月未繳</span>
+              <strong id="dashboardMonthUnpaid">NT$0</strong>
+              <em id="dashboardMonthUnpaidCount">0 筆帳單</em>
+            </button>
+            <button type="button" class="dashboard-tile danger" data-dashboard-filter="overdue">
+              <span>逾期帳單</span>
+              <strong id="dashboardOverdueCount">0</strong>
+              <em id="dashboardOverdueAmount">NT$0</em>
+            </button>
+            <button type="button" class="dashboard-tile total" data-dashboard-filter="month-total">
+              <span>本月預估總支出</span>
+              <strong id="dashboardMonthExpected">NT$0</strong>
+              <em>已繳 + 本月未繳</em>
+            </button>
+          </div>
+          <section class="dashboard-analytics" aria-label="本月支出分析">
+            <article class="dashboard-chart-card">
+              <div class="dashboard-analytics-head">
+                <div>
+                  <span>Cash Flow</span>
+                  <h3>本月現金流圖表</h3>
+                  <p>依本月日期統計已繳與待繳金額，方便看哪幾天支出較集中。</p>
+                </div>
+                <strong id="dashboardCashFlowTotal">NT$0</strong>
+              </div>
+              <div id="dashboardCashFlowChart" class="cash-flow-chart empty">尚無本月現金流資料。</div>
+            </article>
+            <article class="dashboard-compare-card">
+              <div class="dashboard-analytics-head">
+                <div>
+                  <span>Compare</span>
+                  <h3>本月 vs 上月支出比較</h3>
+                  <p>本月以已繳加本月未繳估算，上月以繳費紀錄統計。</p>
+                </div>
+                <strong id="dashboardMonthCompareDiff">NT$0</strong>
+              </div>
+              <div id="dashboardMonthCompareChart" class="month-compare-chart empty">尚無足夠資料比較。</div>
+              <p id="dashboardMonthCompareText" class="dashboard-compare-text">等待新增帳單或繳費紀錄。</p>
+            </article>
+          </section>
+        </section>
+
         <section class="summary-grid" aria-label="繳費摘要">
           <div class="summary-card">
             <span>未繳筆數</span>
@@ -142,7 +209,7 @@
                   </label>
                   <label>
                     <span id="amountLabelText">應繳金額</span>
-                    <input id="amount" type="number" min="0" inputmode="numeric" placeholder="可先留空，之後再補金額" />
+                    <input id="amount" type="text" inputmode="numeric" placeholder="可先留空，之後再補金額" />
                   </label>
                   <div id="rentExtraField" class="rent-extra-field hidden">
                     <div class="rent-extra-head">
@@ -152,11 +219,11 @@
                     <div class="rent-extra-grid">
                       <label>
                         水費
-                        <input id="rentWaterAmount" type="number" min="0" inputmode="numeric" placeholder="例如：300" />
+                        <input id="rentWaterAmount" type="text" inputmode="numeric" placeholder="例如：300" />
                       </label>
                       <label>
                         電費
-                        <input id="rentElectricAmount" type="number" min="0" inputmode="numeric" placeholder="例如：1200" />
+                        <input id="rentElectricAmount" type="text" inputmode="numeric" placeholder="例如：1200" />
                       </label>
                       <div class="rent-total-preview" aria-live="polite">
                         <span>本期房租總額</span>
@@ -173,7 +240,7 @@
                   </label>
                   <label id="minimumAmountField">
                     最低應繳金額
-                    <input id="minimumAmount" type="number" min="0" inputmode="numeric" placeholder="例如：1000，可填 0" />
+                    <input id="minimumAmount" type="text" inputmode="numeric" placeholder="例如：1000，可填 0" />
                   </label>
                   <p id="paymentScheduleHint" class="field-note hidden">此類型會依設定自動調整欄位。</p>
                 </div>
@@ -202,9 +269,24 @@
                       <option value="manual">手動：已繳後不建立下期</option>
                     </select>
                   </label>
+                  <label id="recurrenceIntervalField">
+                    重複週期
+                    <select id="recurrenceInterval">
+                      <option value="monthly">每月</option>
+                      <option value="bimonthly">每 2 個月</option>
+                      <option value="quarterly">每季 / 每 3 個月</option>
+                      <option value="semiannual">每半年</option>
+                      <option value="yearly">每年</option>
+                      <option value="custom">自訂月數</option>
+                    </select>
+                  </label>
+                  <label id="customCycleMonthsField" class="hidden">
+                    自訂間隔月數
+                    <input id="customCycleMonths" type="number" min="1" max="36" inputmode="numeric" placeholder="例如：4" />
+                  </label>
                   <label>
                     提前提醒天數
-                    <input id="remindDays" type="number" min="0" inputmode="numeric" value="3" required />
+                    <input id="remindDays" type="number" min="0" inputmode="numeric" value="7" required />
                   </label>
                   <label class="wide-field">
                     繳費帳戶備註
@@ -259,6 +341,16 @@
                   <option value="overdue">已逾期</option>
                 </select>
               </div>
+            </div>
+            <div id="billBulkToolbar" class="bill-bulk-toolbar hidden" aria-label="批次操作帳單">
+              <label class="bill-select-all">
+                <input id="selectAllBills" type="checkbox" />
+                <span>全選目前清單</span>
+              </label>
+              <span id="selectedBillsCount">已選 0 筆</span>
+              <button id="markSelectedBillsPaidBtn" class="small-btn pay" type="button" disabled>批次標記已繳</button>
+              <button id="uploadSelectedBillsCalendarBtn" class="small-btn" type="button" disabled>批次加入日曆</button>
+              <button id="deleteSelectedBillsBtn" class="small-btn delete" type="button" disabled>批次刪除</button>
             </div>
             <div id="emptyState" class="empty-state">
               <div class="empty-icon">💳</div>
@@ -351,7 +443,10 @@
                 <div class="two-col">
                   <label>
                     密碼 / 備忘
-                    <input id="accountPassword" type="password" placeholder="可留空或只填提示" autocomplete="off" />
+                    <div class="password-input-wrap">
+                      <input id="accountPassword" type="password" placeholder="可留空或只填提示" autocomplete="off" />
+                      <button id="toggleAccountPasswordInput" class="password-toggle-btn" type="button" aria-pressed="false">顯示</button>
+                    </div>
                   </label>
                   <label>
                     繳費網址（選填）
@@ -511,6 +606,6 @@
   </div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="app.js?v=34-rent-utilities-total"></script>
+  <script src="app.js?v=37-pull-refresh"></script>
 </body>
 </html>
