@@ -72,6 +72,7 @@ const tabButtons = document.querySelectorAll(".tab-btn");
 const tabPanels = document.querySelectorAll("[data-tab-panel]");
 const billSubtabButtons = document.querySelectorAll("[data-bill-view]");
 const billSubtabPanels = document.querySelectorAll("[data-bill-view-panel]");
+const mobileQuickNav = document.querySelector(".mobile-quick-nav");
 const mobileQuickButtons = document.querySelectorAll("[data-mobile-quick]");
 const statementDateField = document.querySelector("#statementDateField");
 const dueDateField = document.querySelector("#dueDateField");
@@ -1249,11 +1250,28 @@ function getBackupFileName() {
 
 function updateMobileQuickNavActive(section, viewName) {
   if (!mobileQuickButtons.length) return;
-  const key = section === "accounts"
+
+  const isBillSection = section === "bills";
+  const isAccountSection = section === "accounts";
+
+  if (mobileQuickNav) {
+    mobileQuickNav.classList.toggle("active", isBillSection || isAccountSection);
+    mobileQuickNav.dataset.activeSection = isAccountSection ? "accounts" : (isBillSection ? "bills" : "");
+  }
+
+  const key = isAccountSection
     ? (viewName === "list" ? "account-list" : "account-form")
     : (viewName === "form" ? "bill-form" : "bill-list");
+
   mobileQuickButtons.forEach(button => {
-    button.classList.toggle("active", button.dataset.mobileQuick === key);
+    const action = button.dataset.mobileQuick || "";
+    const belongsToBills = action.startsWith("bill-");
+    const belongsToAccounts = action.startsWith("account-");
+    const visible = (isBillSection && belongsToBills) || (isAccountSection && belongsToAccounts);
+
+    button.classList.toggle("hidden", !visible);
+    button.hidden = !visible;
+    button.classList.toggle("active", visible && action === key);
   });
 }
 
@@ -1344,6 +1362,8 @@ function switchTab(tabName, options = {}) {
   } else if (tabName === "bills") {
     const activeBillButton = document.querySelector(".bill-subtab-btn.active");
     updateMobileQuickNavActive("bills", activeBillButton?.dataset.billView || "list");
+  } else {
+    updateMobileQuickNavActive(tabName, "");
   }
 
   if (options.scroll !== false) {
