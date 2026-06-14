@@ -1,4 +1,4 @@
-const CACHE_NAME = 'payment-manager-v40-section-mobile-bottom-nav';
+const CACHE_NAME = 'payment-manager-v41-section-mobile-top-nav';
 const ASSETS = [
   "./",
   "./index.html",

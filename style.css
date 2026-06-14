@@ -3213,14 +3213,19 @@ body {
 }
 
 
-/* v39 mobile bottom quick navigation */
+/* v41 mobile top quick navigation */
 .mobile-quick-nav {
   display: none;
 }
 
 @media (max-width: 640px) {
   .app {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    padding-top: 0;
+    padding-bottom: 16px;
+  }
+
+  body.mobile-quick-active .app {
+    padding-top: calc(78px + env(safe-area-inset-top));
   }
 
   .bill-subtab-nav,
@@ -3232,7 +3237,8 @@ body {
     position: fixed;
     left: 10px;
     right: 10px;
-    bottom: calc(10px + env(safe-area-inset-bottom));
+    top: calc(10px + env(safe-area-inset-top));
+    bottom: auto;
     z-index: 60;
     display: none;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3241,7 +3247,7 @@ body {
     border: 1px solid rgba(216, 225, 234, 0.92);
     border-radius: 22px;
     background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 16px 38px rgba(31, 41, 55, 0.18);
+    box-shadow: 0 12px 32px rgba(31, 41, 55, 0.16);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
   }

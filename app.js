@@ -1254,10 +1254,14 @@ function updateMobileQuickNavActive(section, viewName) {
   const isBillSection = section === "bills";
   const isAccountSection = section === "accounts";
 
+  const shouldShowQuickNav = isBillSection || isAccountSection;
+
   if (mobileQuickNav) {
-    mobileQuickNav.classList.toggle("active", isBillSection || isAccountSection);
+    mobileQuickNav.classList.toggle("active", shouldShowQuickNav);
     mobileQuickNav.dataset.activeSection = isAccountSection ? "accounts" : (isBillSection ? "bills" : "");
   }
+
+  document.body?.classList.toggle("mobile-quick-active", shouldShowQuickNav);
 
   const key = isAccountSection
     ? (viewName === "list" ? "account-list" : "account-form")
@@ -1282,7 +1286,7 @@ function scrollToBillView(targetView) {
 
   if (!targetPanel) return;
 
-  const stickyOffset = window.matchMedia("(max-width: 640px)").matches ? 88 : 18;
+  const stickyOffset = window.matchMedia("(max-width: 640px)").matches ? 96 : 18;
   const top = targetPanel.getBoundingClientRect().top + window.scrollY - stickyOffset;
   window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
 }
@@ -1314,7 +1318,7 @@ function scrollToAccountView(targetView) {
 
   if (!targetPanel) return;
 
-  const stickyOffset = window.matchMedia("(max-width: 640px)").matches ? 88 : 18;
+  const stickyOffset = window.matchMedia("(max-width: 640px)").matches ? 96 : 18;
   const top = targetPanel.getBoundingClientRect().top + window.scrollY - stickyOffset;
   window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
 }
@@ -2986,6 +2990,25 @@ function isHistoryInCurrentBillMonth(item, now = new Date()) {
   return year === now.getFullYear() && month === now.getMonth() + 1;
 }
 
+function syncMobileQuickNavFromActiveTab() {
+  const activeTabButton = document.querySelector(".tab-btn.active");
+  const activeTab = activeTabButton?.dataset.tab || "bills";
+
+  if (activeTab === "accounts") {
+    const activeAccountButton = document.querySelector(".account-subtab-btn.active");
+    updateMobileQuickNavActive("accounts", activeAccountButton?.dataset.accountView || "form");
+    return;
+  }
+
+  if (activeTab === "bills") {
+    const activeBillButton = document.querySelector(".bill-subtab-btn.active");
+    updateMobileQuickNavActive("bills", activeBillButton?.dataset.billView || "list");
+    return;
+  }
+
+  updateMobileQuickNavActive(activeTab, "");
+}
+
 function render() {
   renderSummary();
   renderCards();
@@ -2994,6 +3017,7 @@ function render() {
   renderBackupReminder();
   renderGoogleCalendarSettings();
   renderGoogleDriveSettings();
+  syncMobileQuickNavFromActiveTab();
 }
 
 function escapeHtml(value) {
