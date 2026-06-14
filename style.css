@@ -217,34 +217,6 @@ input:focus, textarea:focus, select:focus {
   display: none !important;
 }
 
-.pull-refresh-indicator {
-  position: fixed;
-  top: max(10px, env(safe-area-inset-top));
-  left: 50%;
-  transform: translate(-50%, -120%);
-  z-index: 9999;
-  padding: 9px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(216, 225, 234, 0.95);
-  box-shadow: 0 12px 28px rgba(31, 41, 55, 0.16);
-  color: var(--primary-deep);
-  font-size: 13px;
-  font-weight: 800;
-  pointer-events: none;
-  opacity: 0;
-  transition: transform 0.18s ease, opacity 0.18s ease;
-}
-
-.pull-refresh-indicator.visible {
-  transform: translate(-50%, 0);
-  opacity: 1;
-}
-
-.pull-refresh-indicator.ready {
-  color: var(--success);
-}
-
 .field-note {
   grid-column: 1 / -1;
   margin: 0;
@@ -2803,7 +2775,8 @@ body {
 @media (max-width: 760px) {
   html,
   body {
-    overscroll-behavior-y: none;
+    overscroll-behavior-y: auto;
+    touch-action: pan-y;
   }
 
   #tab-accounts.active,

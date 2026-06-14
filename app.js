@@ -3916,66 +3916,7 @@ async function requestNotificationPermission() {
   }
 }
 
-function setupPullToRefresh() {
-  const indicator = document.createElement("div");
-  indicator.className = "pull-refresh-indicator";
-  indicator.setAttribute("aria-live", "polite");
-  indicator.textContent = "下拉重新整理";
-  document.body.appendChild(indicator);
-
-  let startY = 0;
-  let pulling = false;
-  let ready = false;
-  const threshold = 88;
-
-  const isIgnoredTarget = target => Boolean(target?.closest?.("input, textarea, select, button, a, [contenteditable='true'], .app-dialog-backdrop, .account-detail-backdrop"));
-
-  window.addEventListener("touchstart", event => {
-    if (event.touches.length !== 1 || window.scrollY > 0 || isIgnoredTarget(event.target)) {
-      pulling = false;
-      return;
-    }
-
-    startY = event.touches[0].clientY;
-    pulling = true;
-    ready = false;
-    indicator.textContent = "下拉重新整理";
-    indicator.classList.remove("ready");
-  }, { passive: true });
-
-  window.addEventListener("touchmove", event => {
-    if (!pulling || event.touches.length !== 1 || window.scrollY > 0) return;
-
-    const distance = event.touches[0].clientY - startY;
-    if (distance <= 24) return;
-
-    ready = distance >= threshold;
-    indicator.textContent = ready ? "放開重新整理" : "下拉重新整理";
-    indicator.classList.toggle("ready", ready);
-    indicator.classList.add("visible");
-  }, { passive: true });
-
-  window.addEventListener("touchend", () => {
-    if (!pulling) return;
-
-    pulling = false;
-    indicator.classList.remove("visible");
-
-    if (ready) {
-      indicator.textContent = "重新整理中…";
-      setTimeout(() => window.location.reload(), 80);
-    }
-  }, { passive: true });
-
-  window.addEventListener("touchcancel", () => {
-    pulling = false;
-    ready = false;
-    indicator.classList.remove("visible", "ready");
-  }, { passive: true });
-}
-
 function setupEventListeners() {
-setupPullToRefresh();
 accountSubtabButtons.forEach(button => {
   button.addEventListener("click", () => switchAccountView(button.dataset.accountView));
 });
