@@ -72,7 +72,6 @@ const tabButtons = document.querySelectorAll(".tab-btn");
 const tabPanels = document.querySelectorAll("[data-tab-panel]");
 const billSubtabButtons = document.querySelectorAll("[data-bill-view]");
 const billSubtabPanels = document.querySelectorAll("[data-bill-view-panel]");
-const mobileQuickNav = document.querySelector(".mobile-quick-nav");
 const mobileQuickButtons = document.querySelectorAll("[data-mobile-quick]");
 const statementDateField = document.querySelector("#statementDateField");
 const dueDateField = document.querySelector("#dueDateField");
@@ -1250,22 +1249,11 @@ function getBackupFileName() {
 
 function updateMobileQuickNavActive(section, viewName) {
   if (!mobileQuickButtons.length) return;
-
-  const normalizedSection = section === "accounts" ? "accounts" : section === "bills" ? "bills" : "hidden";
-
-  if (mobileQuickNav) {
-    mobileQuickNav.dataset.activeSection = normalizedSection;
-    mobileQuickNav.classList.toggle("hidden", normalizedSection === "hidden");
-  }
-
-  const key = normalizedSection === "accounts"
+  const key = section === "accounts"
     ? (viewName === "list" ? "account-list" : "account-form")
     : (viewName === "form" ? "bill-form" : "bill-list");
-
   mobileQuickButtons.forEach(button => {
-    const visible = button.dataset.mobileQuickSection === normalizedSection;
-    button.hidden = !visible;
-    button.classList.toggle("active", visible && button.dataset.mobileQuick === key);
+    button.classList.toggle("active", button.dataset.mobileQuick === key);
   });
 }
 
@@ -1356,8 +1344,6 @@ function switchTab(tabName, options = {}) {
   } else if (tabName === "bills") {
     const activeBillButton = document.querySelector(".bill-subtab-btn.active");
     updateMobileQuickNavActive("bills", activeBillButton?.dataset.billView || "list");
-  } else {
-    updateMobileQuickNavActive("hidden");
   }
 
   if (options.scroll !== false) {

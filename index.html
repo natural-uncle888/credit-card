@@ -6,7 +6,7 @@
   <title>繳費管理</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2563eb" />
-  <link rel="stylesheet" href="style.css?v=40-context-bottom-nav" />
+  <link rel="stylesheet" href="style.css?v=39-mobile-bottom-nav" />
 </head>
 <body>
   <div class="app">
@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">Payment Reminder</p>
         <h1>繳費管理</h1>
-        <p class="subtitle">用分頁管理帳單、帳號密碼、繳費紀錄與備份設定，支援信用卡、水電費、電信費、保險費等帳單。<br><span class="hero-version">目前版本 v40｜v40：手機底部快捷列改為依目前分頁顯示，帳單分頁顯示「帳單清單｜新增帳單」，帳號分頁顯示「新增帳號｜帳號資料」。</span></p>
+        <p class="subtitle">用分頁管理帳單、帳號密碼、繳費紀錄與備份設定，支援信用卡、水電費、電信費、保險費等帳單。<br><span class="hero-version">目前版本 v39｜v39：移除本月現金流圖表，手機模式新增底部快捷導航列。</span></p>
       </div>
     </header>
 
@@ -67,6 +67,20 @@
               <em>已繳 + 本月未繳</em>
             </button>
           </div>
+          <section class="dashboard-analytics" aria-label="本月支出分析">
+            <article class="dashboard-compare-card">
+              <div class="dashboard-analytics-head">
+                <div>
+                  <span>Compare</span>
+                  <h3>本月 vs 上月支出比較</h3>
+                  <p>本月以已繳加本月未繳估算，上月以繳費紀錄統計。</p>
+                </div>
+                <strong id="dashboardMonthCompareDiff">NT$0</strong>
+              </div>
+              <div id="dashboardMonthCompareChart" class="month-compare-chart empty">尚無足夠資料比較。</div>
+              <p id="dashboardMonthCompareText" class="dashboard-compare-text">等待新增帳單或繳費紀錄。</p>
+            </article>
+          </section>
         </section>
 
         <section class="summary-grid" aria-label="繳費摘要">
@@ -316,6 +330,16 @@
                   <option value="overdue">已逾期</option>
                 </select>
               </div>
+            </div>
+            <div id="billBulkToolbar" class="bill-bulk-toolbar hidden" aria-label="批次操作帳單">
+              <label class="bill-select-all">
+                <input id="selectAllBills" type="checkbox" />
+                <span>全選目前清單</span>
+              </label>
+              <span id="selectedBillsCount">已選 0 筆</span>
+              <button id="markSelectedBillsPaidBtn" class="small-btn pay" type="button" disabled>批次標記已繳</button>
+              <button id="uploadSelectedBillsCalendarBtn" class="small-btn" type="button" disabled>批次加入日曆</button>
+              <button id="deleteSelectedBillsBtn" class="small-btn delete" type="button" disabled>批次刪除</button>
             </div>
             <div id="emptyState" class="empty-state">
               <div class="empty-icon">💳</div>
@@ -570,7 +594,15 @@
     </main>
   </div>
 
+
+  <nav class="mobile-quick-nav" aria-label="手機快捷導航">
+    <button class="mobile-quick-btn active" type="button" data-mobile-quick="bill-list">帳單清單</button>
+    <button class="mobile-quick-btn" type="button" data-mobile-quick="bill-form">新增帳單</button>
+    <button class="mobile-quick-btn" type="button" data-mobile-quick="account-form">新增帳號</button>
+    <button class="mobile-quick-btn" type="button" data-mobile-quick="account-list">帳號資料</button>
+  </nav>
+
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="app.js?v=40-context-bottom-nav"></script>
+  <script src="app.js?v=39-mobile-bottom-nav"></script>
 </body>
 </html>

@@ -1444,7 +1444,7 @@ body {
 }
 
 .four-fields {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .payment-fields {
@@ -2741,7 +2741,7 @@ body {
 }
 
 .compact-bill-summary {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 @media (max-width: 760px) {
@@ -3213,7 +3213,7 @@ body {
 }
 
 
-/* v40 context-aware mobile bottom quick navigation */
+/* v39 mobile bottom quick navigation */
 .mobile-quick-nav {
   display: none;
 }
@@ -3235,7 +3235,7 @@ body {
     bottom: calc(10px + env(safe-area-inset-bottom));
     z-index: 60;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
     padding: 7px;
     border: 1px solid rgba(216, 225, 234, 0.92);
@@ -3244,10 +3244,6 @@ body {
     box-shadow: 0 16px 38px rgba(31, 41, 55, 0.18);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-  }
-
-  .mobile-quick-nav.hidden {
-    display: none;
   }
 
   .mobile-quick-btn {
