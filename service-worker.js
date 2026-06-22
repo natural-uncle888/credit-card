@@ -1,4 +1,4 @@
-const CACHE_NAME = 'payment-manager-v42-bill-colors-mobile-form-sections';
+const CACHE_NAME = 'payment-manager-v43-month-due-selection';
 const ASSETS = [
   "./",
   "./index.html",

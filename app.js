@@ -19,6 +19,10 @@ const weekDueCount = document.querySelector("#weekDueCount");
 const weekDueList = document.querySelector("#weekDueList");
 const monthDueCount = document.querySelector("#monthDueCount");
 const monthDueList = document.querySelector("#monthDueList");
+const monthDueSelection = document.querySelector("#monthDueSelection");
+const monthDueSelectedCount = document.querySelector("#monthDueSelectedCount");
+const monthDueSelectedTotal = document.querySelector("#monthDueSelectedTotal");
+const clearMonthDueSelectionBtn = document.querySelector("#clearMonthDueSelection");
 const resetBtn = document.querySelector("#resetBtn");
 const formTitle = document.querySelector("#formTitle");
 const installBtn = document.querySelector("#installBtn");
@@ -125,6 +129,7 @@ let googleAccessToken = "";
 let accountSearchKeyword = "";
 let selectedAccountIds = new Set();
 let selectedBillIds = new Set();
+let selectedMonthDueIds = new Set();
 let activeDashboardFilter = "";
 
 const ACCOUNT_MAX_UNLOCK_ATTEMPTS = 5;
@@ -1798,26 +1803,46 @@ function getCurrentMonthDueCards() {
     .sort((a, b) => a.due - b.due || getDisplayName(a).localeCompare(getDisplayName(b), "zh-Hant"));
 }
 
+function updateMonthDueSelection(list = getCurrentMonthDueCards()) {
+  if (!monthDueSelection || !monthDueSelectedCount || !monthDueSelectedTotal) return;
+  const availableIds = new Set(list.map(card => card.id));
+  selectedMonthDueIds = new Set([...selectedMonthDueIds].filter(id => availableIds.has(id)));
+  const selectedCards = list.filter(card => selectedMonthDueIds.has(card.id));
+  const total = selectedCards.reduce((sum, card) => sum + Number(card.amount || 0), 0);
+
+  monthDueSelection.hidden = list.length === 0;
+  monthDueSelection.classList.toggle("has-selection", selectedCards.length > 0);
+  monthDueSelectedCount.textContent = selectedCards.length;
+  monthDueSelectedTotal.textContent = formatMoney(total);
+  if (clearMonthDueSelectionBtn) clearMonthDueSelectionBtn.disabled = selectedCards.length === 0;
+}
+
 function renderMonthDueList() {
   if (!monthDueList || !monthDueCount) return;
   const list = getCurrentMonthDueCards();
   monthDueCount.textContent = list.length;
+  updateMonthDueSelection(list);
   if (list.length === 0) {
     monthDueList.textContent = "本月沒有待繳項目。";
     monthDueList.classList.add("empty");
     return;
   }
   monthDueList.classList.remove("empty");
-  monthDueList.innerHTML = list.map(card => `
-    <button type="button" class="month-due-item" data-due-card-id="${escapeHtml(card.id)}">
+  monthDueList.innerHTML = list.map(card => {
+    const selected = selectedMonthDueIds.has(card.id);
+    const amountText = Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount);
+    return `
+    <button type="button" class="month-due-item${selected ? " selected" : ""}" data-month-due-select="${escapeHtml(card.id)}" aria-pressed="${selected ? "true" : "false"}">
+      <span class="month-due-check" aria-hidden="true">${selected ? "✓" : ""}</span>
       <span class="month-due-date">${escapeHtml(formatDate(card.dueDate).replace(/^\d{4}\//, ""))}</span>
       <span class="month-due-main">
         <strong>${escapeHtml(getDisplayName(card))}</strong>
         <em>${escapeHtml(getBillTypeText(card.billType))}｜${escapeHtml(getPaymentMethodText(card))}${card.paymentAccount ? `｜${escapeHtml(card.paymentAccount)}` : ""}</em>
       </span>
-      <b>${Number(card.amount || 0) === 0 ? "待輸入" : formatMoney(card.amount)}</b>
+      <b>${amountText}</b>
     </button>
-  `).join("");
+  `;
+  }).join("");
 }
 
 function getRentPartLabel(part) {
@@ -4259,7 +4284,25 @@ form.addEventListener("submit", async event => {
   }
 });
 
+clearMonthDueSelectionBtn?.addEventListener("click", () => {
+  selectedMonthDueIds.clear();
+  renderMonthDueList();
+});
+
 document.querySelector("#tab-bills")?.addEventListener("click", event => {
+  const monthDueButton = event.target.closest("[data-month-due-select]");
+  if (monthDueButton) {
+    const id = monthDueButton.dataset.monthDueSelect;
+    if (selectedMonthDueIds.has(id)) selectedMonthDueIds.delete(id);
+    else selectedMonthDueIds.add(id);
+    monthDueButton.classList.toggle("selected", selectedMonthDueIds.has(id));
+    monthDueButton.setAttribute("aria-pressed", selectedMonthDueIds.has(id) ? "true" : "false");
+    const check = monthDueButton.querySelector(".month-due-check");
+    if (check) check.textContent = selectedMonthDueIds.has(id) ? "✓" : "";
+    updateMonthDueSelection(getCurrentMonthDueCards());
+    return;
+  }
+
   const dashboardButton = event.target.closest("[data-dashboard-filter]");
   if (dashboardButton) {
     const filter = dashboardButton.dataset.dashboardFilter;

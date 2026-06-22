@@ -6,7 +6,7 @@
   <title>繳費管理</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2563eb" />
-  <link rel="stylesheet" href="style.css?v=41-section-mobile-top-nav" />
+  <link rel="stylesheet" href="style.css?v=42-month-due-selection" />
 </head>
 <body>
   <div class="app">
@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">Payment Reminder</p>
         <h1>繳費管理</h1>
-        <p class="subtitle">用分頁管理帳單、帳號密碼、繳費紀錄與備份設定，支援信用卡、水電費、電信費、保險費等帳單。<br><span class="hero-version">目前版本 v42｜v42：新增帳單分類顏色、手機快捷列目前狀態、儲存後自動回清單與帳單表單分段收合。</span></p>
+        <p class="subtitle">用分頁管理帳單、帳號密碼、繳費紀錄與備份設定，支援信用卡、水電費、電信費、保險費等帳單。<br><span class="hero-version">目前版本 v43｜v43：本月待繳支援多選項目並自動加總需繳金額。</span></p>
       </div>
     </header>
 
@@ -102,9 +102,16 @@
           <div class="month-due-head">
             <div>
               <span>本月待繳</span>
-              <p>列出這個月還沒繳的帳單與固定付款。</p>
+              <p>列出這個月還沒繳的帳單與固定付款，可點選多項自動加總。</p>
             </div>
             <strong id="monthDueCount">0</strong>
+          </div>
+          <div id="monthDueSelection" class="month-due-selection" hidden>
+            <div>
+              <span>已選 <strong id="monthDueSelectedCount">0</strong> 項</span>
+              <b id="monthDueSelectedTotal">NT$0</b>
+            </div>
+            <button type="button" id="clearMonthDueSelection" class="small-btn">清除選取</button>
           </div>
           <div id="monthDueList" class="month-due-list empty">本月沒有待繳項目。</div>
         </section>
@@ -607,6 +614,6 @@
   </nav>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="app.js?v=41-section-mobile-top-nav"></script>
+  <script src="app.js?v=42-month-due-selection"></script>
 </body>
 </html>
