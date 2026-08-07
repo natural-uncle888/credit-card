@@ -6,7 +6,7 @@
   <title>繳費管理</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2563eb" />
-  <link rel="stylesheet" href="style.css?v=42-month-due-selection" />
+  <link rel="stylesheet" href="style.css?v=45-history-analytics" />
 </head>
 <body>
   <div class="app">
@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">Payment Reminder</p>
         <h1>繳費管理</h1>
-        <p class="subtitle">用分頁管理帳單、帳號密碼、繳費紀錄與備份設定，支援信用卡、水電費、電信費、保險費等帳單。<br><span class="hero-version">目前版本 v43｜v43：本月待繳支援多選項目並自動加總需繳金額。</span></p>
+        <p class="subtitle">用分頁管理帳單、帳號密碼、繳費紀錄與備份設定，支援信用卡、水電費、電信費、保險費等帳單。<br><span class="hero-version">目前版本 v45｜新增月份分析、類別支出與近 6 個月繳費趨勢。</span></p>
       </div>
     </header>
 
@@ -27,24 +27,19 @@
 
     <main class="tab-shell">
       <section id="tab-bills" class="tab-panel active" data-tab-panel="bills">
-        <section class="dashboard-card" aria-label="首頁儀表板">
+        <section class="dashboard-card home-overview" aria-label="本月繳費概況">
           <div class="dashboard-head">
             <div>
-              <span>Dashboard</span>
-              <h2>本月繳費總覽</h2>
-              <p>快速看今天、7 天內、逾期與本月金額狀態。</p>
+              <span>This month</span>
+              <h2>本月概況</h2>
+              <p>先掌握本月要準備多少、已完成多少，以及是否有逾期項目。</p>
             </div>
           </div>
-          <div class="dashboard-grid">
-            <button type="button" class="dashboard-tile danger" data-dashboard-filter="today">
-              <span>今天要繳</span>
-              <strong id="dashboardTodayDue">0</strong>
-              <em id="dashboardTodayAmount">NT$0</em>
-            </button>
-            <button type="button" class="dashboard-tile warning" data-dashboard-filter="week">
-              <span>7 天內要繳</span>
-              <strong id="dashboardWeekDue">0</strong>
-              <em id="dashboardWeekAmount">NT$0</em>
+          <div class="dashboard-grid home-overview-grid">
+            <button type="button" class="dashboard-tile total" data-dashboard-filter="month-total">
+              <span>本月預估支出</span>
+              <strong id="dashboardMonthExpected">NT$0</strong>
+              <em>已繳 + 本月待繳</em>
             </button>
             <button type="button" class="dashboard-tile success" data-dashboard-filter="paid-month">
               <span>本月已繳</span>
@@ -52,57 +47,35 @@
               <em id="dashboardMonthPaidCount">0 筆紀錄</em>
             </button>
             <button type="button" class="dashboard-tile" data-dashboard-filter="unpaid-month">
-              <span>本月未繳</span>
+              <span>本月待繳</span>
               <strong id="dashboardMonthUnpaid">NT$0</strong>
               <em id="dashboardMonthUnpaidCount">0 筆帳單</em>
             </button>
             <button type="button" class="dashboard-tile danger" data-dashboard-filter="overdue">
-              <span>逾期帳單</span>
-              <strong id="dashboardOverdueCount">0</strong>
-              <em id="dashboardOverdueAmount">NT$0</em>
+              <span>已逾期</span>
+              <strong id="dashboardOverdueAmount">NT$0</strong>
+              <em><b id="dashboardOverdueCount">0</b> 筆需要處理</em>
             </button>
-            <button type="button" class="dashboard-tile total" data-dashboard-filter="month-total">
-              <span>本月預估總支出</span>
-              <strong id="dashboardMonthExpected">NT$0</strong>
-              <em>已繳 + 本月未繳</em>
-            </button>
-          </div>
-          <section class="dashboard-analytics" aria-label="本月支出分析">
-            <article class="dashboard-compare-card">
-              <div class="dashboard-analytics-head">
-                <div>
-                  <span>Compare</span>
-                  <h3>本月 vs 上月支出比較</h3>
-                  <p>本月以已繳加本月未繳估算，上月以繳費紀錄統計。</p>
-                </div>
-                <strong id="dashboardMonthCompareDiff">NT$0</strong>
-              </div>
-              <div id="dashboardMonthCompareChart" class="month-compare-chart empty">尚無足夠資料比較。</div>
-              <p id="dashboardMonthCompareText" class="dashboard-compare-text">等待新增帳單或繳費紀錄。</p>
-            </article>
-          </section>
-        </section>
-
-        <section class="summary-grid" aria-label="繳費摘要">
-          <div class="summary-card">
-            <span>未繳筆數</span>
-            <strong id="unpaidCount">0</strong>
-          </div>
-          <div class="summary-card danger">
-            <span>提醒中</span>
-            <strong id="urgentCount">0</strong>
-          </div>
-          <div class="summary-card">
-            <span>本期未繳合計</span>
-            <strong id="totalAmount">$0</strong>
           </div>
         </section>
 
-        <section class="month-due-card" aria-label="本月待繳清單">
+        <section class="priority-due-card" aria-label="下一步要處理">
+          <div class="priority-due-head">
+            <div>
+              <span>Next actions</span>
+              <h2>下一步要處理</h2>
+              <p>優先顯示逾期、今天到期與未來 7 天內的帳單，可直接查看或標記已繳。</p>
+            </div>
+            <strong id="priorityDueCount">0</strong>
+          </div>
+          <div id="priorityDueList" class="priority-due-list empty">目前沒有急需處理的帳單。</div>
+        </section>
+
+        <section class="month-due-card" aria-label="本月付款清單">
           <div class="month-due-head">
             <div>
-              <span>本月待繳</span>
-              <p>列出這個月還沒繳的帳單與固定付款，可點選多項自動加總。</p>
+              <span>本月付款清單</span>
+              <p>需要一次準備多筆款項時，可點選多項自動加總。</p>
             </div>
             <strong id="monthDueCount">0</strong>
           </div>
@@ -114,23 +87,6 @@
             <button type="button" id="clearMonthDueSelection" class="small-btn">清除選取</button>
           </div>
           <div id="monthDueList" class="month-due-list empty">本月沒有待繳項目。</div>
-        </section>
-
-        <section class="due-overview" aria-label="近期繳費提醒">
-          <article class="due-overview-card today">
-            <div class="due-overview-head">
-              <span>今天到期</span>
-              <strong id="todayDueCount">0</strong>
-            </div>
-            <div id="todayDueList" class="due-overview-list">今天沒有到期帳單。</div>
-          </article>
-          <article class="due-overview-card soon">
-            <div class="due-overview-head">
-              <span>7 天內到期</span>
-              <strong id="weekDueCount">0</strong>
-            </div>
-            <div id="weekDueList" class="due-overview-list">7 天內沒有即將到期帳單。</div>
-          </article>
         </section>
 
         <div class="bill-subtab-nav" role="tablist" aria-label="帳單頁面子分頁">
@@ -342,6 +298,13 @@
                 </select>
               </div>
             </div>
+            <div class="bill-filter-chips" aria-label="快速篩選帳單">
+              <button type="button" class="bill-filter-chip active" data-bill-filter-chip="all">全部 <b id="chipAllCount">0</b></button>
+              <button type="button" class="bill-filter-chip danger" data-bill-filter-chip="overdue">逾期 <b id="chipOverdueCount">0</b></button>
+              <button type="button" class="bill-filter-chip warning" data-bill-filter-chip="week">7 天內 <b id="chipWeekCount">0</b></button>
+              <button type="button" class="bill-filter-chip" data-bill-filter-chip="unpaid-month">本月待繳 <b id="chipMonthCount">0</b></button>
+              <button type="button" class="bill-filter-chip" data-bill-filter-chip="auto">自動扣款 <b id="chipAutoCount">0</b></button>
+            </div>
             <div id="billBulkToolbar" class="bill-bulk-toolbar hidden" aria-label="批次操作帳單">
               <label class="bill-select-all">
                 <input id="selectAllBills" type="checkbox" />
@@ -510,24 +473,75 @@
 
       <section id="tab-history" class="tab-panel" data-tab-panel="history">
         <section class="panel history-panel">
-          <div class="panel-title list-title">
+          <div class="panel-title history-title-row">
             <div>
-              <h2>繳費紀錄</h2>
-              <p class="section-desc">按下已繳後會自動記錄；循環帳單會建立下期，手動帳單只保留繳費紀錄。</p>
+              <h2>月份分析</h2>
+              <p class="section-desc">依帳單歸屬月份統計已繳金額、類別占比與近 6 個月趨勢；即使晚幾天才按已繳，也會回到原本帳單月份。</p>
+            </div>
+            <div class="history-month-toolbar" aria-label="切換分析月份">
+              <button id="historyPrevMonthBtn" class="small-btn history-month-step" type="button" aria-label="上一個月">‹</button>
+              <label class="history-month-picker">
+                <span class="visually-hidden">分析月份</span>
+                <input id="historyMonthInput" type="month" />
+              </label>
+              <button id="historyNextMonthBtn" class="small-btn history-month-step" type="button" aria-label="下一個月">›</button>
+              <button id="historyCurrentMonthBtn" class="text-btn" type="button">回本月</button>
+            </div>
+          </div>
+
+          <div class="history-summary history-summary-v45">
+            <div class="summary-card compact">
+              <span id="historyMonthTotalLabel">本月已繳</span>
+              <strong id="monthPaidTotal">$0</strong>
+              <em id="historyMonthTotalHint">0 筆紀錄</em>
+            </div>
+            <div class="summary-card compact">
+              <span>平均每筆</span>
+              <strong id="historyAverage">$0</strong>
+              <em>依所選月份已繳紀錄</em>
+            </div>
+            <div class="summary-card compact">
+              <span>較上月</span>
+              <strong id="historyMonthChange">—</strong>
+              <em id="historyMonthChangeHint">上月 $0</em>
+            </div>
+            <div class="summary-card compact">
+              <span>累積繳費紀錄</span>
+              <strong id="historyCount">0</strong>
+              <em>所有月份</em>
+            </div>
+          </div>
+
+          <div class="history-analysis-grid">
+            <section class="history-analysis-card" aria-labelledby="historyCategoryTitle">
+              <div class="history-analysis-head">
+                <div>
+                  <h3 id="historyCategoryTitle">類別支出</h3>
+                  <p id="historyCategorySubtitle">查看各帳單類型占本月已繳金額的比例。</p>
+                </div>
+              </div>
+              <div id="historyCategoryList" class="history-category-list"></div>
+            </section>
+
+            <section class="history-analysis-card" aria-labelledby="historyTrendTitle">
+              <div class="history-analysis-head">
+                <div>
+                  <h3 id="historyTrendTitle">近 6 個月趨勢</h3>
+                  <p>以目前選取月份為終點，比較每月實際已繳總額。</p>
+                </div>
+              </div>
+              <div id="historyTrendList" class="history-trend-list"></div>
+            </section>
+          </div>
+
+          <div class="history-detail-head">
+            <div>
+              <h3 id="historyDetailTitle">本月繳費明細</h3>
+              <p id="historyDetailSubtitle" class="section-desc">0 筆紀錄</p>
             </div>
             <div class="history-actions">
               <button id="toggleHistoryBtn" class="text-btn hidden" type="button">查看全部</button>
-              <button id="clearHistoryBtn" class="text-btn" type="button">清除紀錄</button>
-            </div>
-          </div>
-          <div class="history-summary">
-            <div class="summary-card compact">
-              <span>本月帳單已繳</span>
-              <strong id="monthPaidTotal">$0</strong>
-            </div>
-            <div class="summary-card compact">
-              <span>總繳費紀錄</span>
-              <strong id="historyCount">0</strong>
+              <button id="clearHistoryBtn" class="text-btn" type="button">清除所有紀錄</button>
             </div>
           </div>
           <div id="historyList" class="history-list"></div>
@@ -614,6 +628,6 @@
   </nav>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="app.js?v=42-month-due-selection"></script>
+  <script src="app.js?v=45-history-analytics"></script>
 </body>
 </html>

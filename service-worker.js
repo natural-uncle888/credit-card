@@ -1,4 +1,4 @@
-const CACHE_NAME = 'payment-manager-v43-month-due-selection';
+const CACHE_NAME = 'payment-manager-v45-history-analytics';
 const ASSETS = [
   "./",
   "./index.html",
